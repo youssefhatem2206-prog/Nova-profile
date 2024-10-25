@@ -49,23 +49,28 @@
 
 /* display background color black on navbar scroll */
 .navbarScroll.navbarDark {
-    background-color: black;
+    background-color: #1a1713;
 }
 /* social media icons styling */
 .social-icons {
-    font-size: 36px;
-    cursor: pointer;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-color: #f8f9fa; /* يمكنك تغيير اللون حسب رغبتك */
+    text-align: center;
+    padding: 10px 0;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.1); /* إضافة ظل خفيف */
+}
+.social-icons a {
+    margin: 0 10px;
+    color: #000; /* لون الأيقونات */
+    font-size: 24px;
 }
 .fa-facebook:hover,.fa-instagram:hover,.fa-twitter:hover,.fa-linkedin:hover, .fa-twitch:hover {
     color: #008000;
 }
 .fab {
     color: #000000;
-}
-/* footer styling */
-#footer {
-    background-color: #808080;
-    text-align: center;
 }
 
 /* spacing on all sections */
@@ -75,4 +80,21 @@
 }
 #contact {
     padding-bottom: 4rem;
+}
+
+.portfolio-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+.portfolio-item {
+    position: relative;
+    overflow: hidden;
+}
+.portfolio-item img {
+    width: 100%;
+    transition: transform 0.3s;
+}
+.portfolio-item:hover img {
+    transform: scale(1.1);
 }
