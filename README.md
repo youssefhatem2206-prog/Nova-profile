@@ -60,7 +60,7 @@ Award-winning graduation project that utilizes **deep learning** to diagnose ski
 
 ## 📞 Contact Me  
 Feel free to connect with me through:  
-- **Email:** youssef@example.com  
+- **Email:** youssefhatem206@gmail.com  
 - **GitHub:** [Youssef Hatem](https://github.com/youssef13494)  
 - **Portfolio Website:** [Timsah](https://timsah.vercel.app/)  
 
