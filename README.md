@@ -15,7 +15,7 @@ A Streamlit app visualizing Spotify data, including track counts, top playlists,
 - Python, Pandas, Plotly, Streamlit  
 - Data exploration and interactive visualizations  
 
-🔗 [View Project](#)
+🔗 [View Project](https://github.com/youssef13494/Spotify_Dashboard)
 
 ---
 
@@ -61,13 +61,13 @@ Award-winning graduation project that utilizes **deep learning** to diagnose ski
 ## 📞 Contact Me  
 Feel free to connect with me through:  
 - **Email:** youssef@example.com  
-- **GitHub:** [Youssef Hatem](https://github.com/Youssef-Hatem)  
-- **Portfolio Website:** [Timsah](https://timsah.com)  
+- **GitHub:** [Youssef Hatem](https://github.com/youssef13494)  
+- **Portfolio Website:** [Timsah](https://timsah.vercel.app/)  
 
 ---
 
 ## 🚀 How to Use  
 1. Clone the repository:  
    ```bash
-   git clone https://github.com/Youssef-Hatem/my-portfolio.git
-   cd my-portfolio
+   git clone https://github.com/youssef13494/portfolio_website.git
+
