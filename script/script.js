@@ -1,46 +1,91 @@
+// script/script.js
 // add class navbarDark on navbar scroll
-const header = document.querySelector('.navbar');
+const header = document.querySelector('.navbar-custom');
+const backToTop = document.querySelector('.back-to-top');
 
 window.onscroll = function() {
     var top = window.scrollY;
     if(top >=100) {
-        header.classList.add('navbarDark');
+        header.classList.add('scrolled');
+        backToTop.classList.add('active');
     }
     else {
-        header.classList.remove('navbarDark');
+        header.classList.remove('scrolled');
+        backToTop.classList.remove('active');
     }
 }
-window.addEventListener('scroll', function() {
-    const contactSection = document.getElementById('contact');
-    const footer = document.getElementById('footer');
-    
-    const rect = contactSection.getBoundingClientRect();
-    
-    if (rect.top <= window.innerHeight && rect.bottom >= 0) {
-        footer.style.display = 'block'; 
-    } else {
-        footer.style.display = 'none'; 
-    }
+
+// Smooth scrolling for navigation links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    });
 });
 
+// Contact form submission
 function sendEmail() {
     const name = document.getElementById('name').value;
     const email = document.getElementById('email').value;
     const subject = document.getElementById('subject').value;
     const comment = document.getElementById('comment').value;
     
+    // Basic validation
+    if (!name || !email || !subject || !comment) {
+        alert('Please fill in all fields');
+        return;
+    }
+    
     emailjs.send("service_g4pd0uf","template_obwymbh",{
-        from_name: "Youssef",
-        to_name: name,
+        from_name: name,
+        to_name: "Youssef",
         message: subject,
         email: email,
-        reply_to:comment,
+        reply_to: email,
+        comment: comment
         })
         .then((response) => {
             console.log('SUCCESS!', response.status, response.text);
-            alert('Your message has been sent!'); // Confirmation message
+            alert('Your message has been sent successfully!');
+            document.getElementById('contactForm').reset();
         }, (error) => {
             console.log('FAILED...', error);
             alert('Failed to send your message. Please try again later.');
         });
 }
+
+// Add active class to current navigation item
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+
+window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        const sectionHeight = section.clientHeight;
+        if (scrollY >= (sectionTop - 100)) {
+            current = section.getAttribute('id');
+        }
+    });
+
+    navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === `#${current}`) {
+            link.classList.add('active');
+        }
+    });
+});
+
+// Ensure social icons bar is always visible
+window.addEventListener('load', function() {
+    const socialIcons = document.querySelector('.social-icons');
+    if (socialIcons) {
+        socialIcons.style.display = 'block';
+    }
+});
