@@ -54,16 +54,13 @@ img { max-width:100%; height:auto; }
     box-shadow: 0 2px 20px rgba(0,0,0,.3);
     padding: 8px 0;
 }
-.brand-logo-wrap { display:inline-flex; align-items:baseline; font-size:1.3rem; font-weight:800; letter-spacing:-.5px; }
-/* Logo colors — used in About card (light background) */
-.brand-novent { color: #0D518C; }
-.brand-iq     { color: #218EC7; }
+/* Navbar logo image */
+.navbar-logo { height:38px; width:auto; object-fit:contain; }
+.navbar-brand { display:flex; align-items:center; line-height:1; }
 
-/* Logo in navbar (dark background) — lighter versions */
-.navbar-custom .brand-novent { color: #fff; }
-.navbar-custom .brand-iq     { color: #218EC7; }
-.brand-sub { display:block; font-size:.65rem; color:rgba(255,255,255,.6); letter-spacing:.5px; margin-top:-2px; }
-.navbar-brand { display:flex; flex-direction:column; line-height:1; }
+/* About section logo image */
+.noventiq-big-logo { display:flex; justify-content:center; align-items:center; padding:10px 0; }
+.about-logo { max-height:80px; width:auto; object-fit:contain; }
 .navbar-custom .nav-link { color:rgba(255,255,255,.85) !important; font-size:.9rem; font-weight:500; padding:8px 14px !important; border-radius:6px; }
 .navbar-custom .nav-link:hover, .navbar-custom .nav-link.active { color:#fff !important; background:rgba(255,255,255,.1); }
 .navbar-toggler { border-color:rgba(255,255,255,.3); }

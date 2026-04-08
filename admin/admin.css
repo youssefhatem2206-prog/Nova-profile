@@ -18,9 +18,9 @@
 * { box-sizing:border-box; margin:0; padding:0; }
 body { font-family:var(--font); background:var(--bg); color:var(--text); }
 
-/* ══ Brand colors ════════════════════════════════════════ */
-.brand-novent { color: #0D518C; }
-.brand-iq     { color: #218EC7; }
+/* ══ Logo images ═════════════════════════════════════════ */
+.login-logo-img   { max-width:180px; height:auto; margin-bottom:16px; }
+.sidebar-logo-img { max-width:140px; height:auto; object-fit:contain; filter:brightness(0) invert(1); }
 
 /* ══ LOGIN ══════════════════════════════════════════════ */
 .login-body {
