@@ -86,13 +86,22 @@
                             placeholder="## Overview&#10;&#10;Write detailed description using **Markdown**…"></textarea>
                     </div>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Tags <small class="text-muted">(comma separated)</small></label>
                             <input type="text" class="form-control" id="p-tags" placeholder="Python, AI, LLM">
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">GitHub URL</label>
-                            <input type="url" class="form-control" id="p-github" placeholder="https://github.com/…">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Industry</label>
+                            <input type="text" class="form-control" id="p-industry" placeholder="e.g. Healthcare, Finance, Retail">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Deployment Type</label>
+                            <select class="form-select" id="p-deploy" aria-label="Deployment type">
+                                <option value="">— Not specified —</option>
+                                <option value="cloud">Cloud</option>
+                                <option value="onprem">On-Premises</option>
+                                <option value="hybrid">Hybrid</option>
+                            </select>
                         </div>
                     </div>
                     <div class="mb-3">

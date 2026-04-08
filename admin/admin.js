@@ -106,11 +106,15 @@ function renderProjects() {
     tbody.innerHTML = '';
     projects.forEach(p => {
         const tr = document.createElement('tr');
+        const deployLabels = { cloud:'Cloud', onprem:'On-Prem', hybrid:'Hybrid' };
         tr.innerHTML = `
             <td>${p.image ? `<img src="../${p.image}" alt="" class="table-thumb" onerror="this.style.display='none'">` : '<i class="fas fa-image text-muted"></i>'}</td>
-            <td><strong>${p.title}</strong></td>
+            <td><strong>${p.title}</strong><br><small class="text-muted">${p.industry||''}</small></td>
             <td>${p.category || '–'}</td>
-            <td><small class="text-muted">${(p.tags||[]).join(', ')||'–'}</small></td>
+            <td>
+                <small class="text-muted">${(p.tags||[]).join(', ')||'–'}</small><br>
+                ${p.deploymentType ? `<span class="badge bg-secondary">${deployLabels[p.deploymentType]||p.deploymentType}</span>` : ''}
+            </td>
             <td class="text-center">${p.order||1}</td>
             <td>
                 <button type="button" class="btn btn-sm btn-outline-primary me-1" title="Edit"><i class="fas fa-edit"></i></button>
@@ -141,7 +145,8 @@ function openProjectForm(p) {
     document.getElementById('p-description').value              = p?.description || '';
     document.getElementById('p-long-description').value         = p?.longDescription || '';
     document.getElementById('p-tags').value                     = (p?.tags||[]).join(', ');
-    document.getElementById('p-github').value                   = p?.githubUrl || '';
+    document.getElementById('p-industry').value                 = p?.industry || '';
+    document.getElementById('p-deploy').value                   = p?.deploymentType || '';
     document.getElementById('p-url').value                      = p?.projectUrl || '';
     document.getElementById('p-image-url').value                = p?.image || '';
     document.getElementById('p-video-url').value                = p?.videoUrl || '';
@@ -184,7 +189,8 @@ document.getElementById('project-form').addEventListener('submit', e => {
         description,
         longDescription: document.getElementById('p-long-description').value.trim(),
         tags:            document.getElementById('p-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
-        githubUrl:       document.getElementById('p-github').value.trim(),
+        industry:        document.getElementById('p-industry').value.trim(),
+        deploymentType:  document.getElementById('p-deploy').value,
         projectUrl:      document.getElementById('p-url').value.trim(),
         image:           document.getElementById('p-image-url').value.trim(),
         videoUrl:        document.getElementById('p-video-url').value.trim(),
