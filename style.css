@@ -1,17 +1,17 @@
 /* ═══════════════════════════════════════
    NOVENTIQ DATA & AI TEAM — STYLESHEET
-   Colors: Navy #1B2A47, Red #E31837, White
+   Red: #D92332 | Navy: #0D518C | Blue: #218EC7 | White: #F2F2F2
 ═══════════════════════════════════════ */
 :root {
-    --primary-color:   #1B2A47;
-    --secondary-color: #2A4080;
-    --accent-color:    #E31837;
-    --accent-hover:    #c0142e;
+    --primary-color:   #0D518C;   /* كحلي */
+    --secondary-color: #218EC7;   /* لبني */
+    --accent-color:    #D92332;   /* أحمر */
+    --accent-hover:    #b81d2a;
     --text-color:      #333;
-    --light-bg:        #f5f7fa;
+    --light-bg:        #F2F2F2;   /* أبيض */
     --white:           #fff;
     --gray:            #6c757d;
-    --light-gray:      #e9ecef;
+    --light-gray:      #e0e6ed;
     --border-radius:   8px;
     --box-shadow:      0 5px 20px rgba(0,0,0,.10);
     --transition:      all 0.3s ease;
@@ -55,10 +55,13 @@ img { max-width:100%; height:auto; }
     padding: 8px 0;
 }
 .brand-logo-wrap { display:inline-flex; align-items:baseline; font-size:1.3rem; font-weight:800; letter-spacing:-.5px; }
-.brand-nov { color:#fff; }
-.brand-en  { color:#4A90D9; }
-.brand-t   { color:#E31837; }
-.brand-iq  { color:#fff; }
+/* Logo colors — used in About card (light background) */
+.brand-novent { color: #0D518C; }
+.brand-iq     { color: #218EC7; }
+
+/* Logo in navbar (dark background) — lighter versions */
+.navbar-custom .brand-novent { color: #fff; }
+.navbar-custom .brand-iq     { color: #218EC7; }
 .brand-sub { display:block; font-size:.65rem; color:rgba(255,255,255,.6); letter-spacing:.5px; margin-top:-2px; }
 .navbar-brand { display:flex; flex-direction:column; line-height:1; }
 .navbar-custom .nav-link { color:rgba(255,255,255,.85) !important; font-size:.9rem; font-weight:500; padding:8px 14px !important; border-radius:6px; }
@@ -71,7 +74,7 @@ img { max-width:100%; height:auto; }
     min-height: 100vh;
     display: flex;
     align-items: center;
-    background: linear-gradient(135deg, #0d1b2e 0%, #1B2A47 50%, #2A4080 100%);
+    background: linear-gradient(135deg, #072d52 0%, #0D518C 55%, #218EC7 100%);
     position: relative;
     overflow: hidden;
 }

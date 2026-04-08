@@ -1,8 +1,8 @@
 /* ── Variables ─────────────────────────────────────────── */
 :root {
-    --primary:   #1B2A47;   /* Noventiq navy */
-    --accent:    #E31837;   /* Noventiq red */
-    --secondary: #2A4080;
+    --primary:   #0D518C;   /* كحلي */
+    --accent:    #D92332;   /* أحمر */
+    --secondary: #218EC7;   /* لبني */
     --sidebar-w: 240px;
     --topbar-h:  60px;
     --bg:        #f0f2f5;
@@ -18,17 +18,15 @@
 * { box-sizing:border-box; margin:0; padding:0; }
 body { font-family:var(--font); background:var(--bg); color:var(--text); }
 
-/* ══ Brand colors in sidebar ════════════════════════════ */
-.brand-nov { color:#fff; }
-.brand-en  { color:#4A90D9; }
-.brand-t   { color:#E31837; }
-.brand-iq  { color:#fff; }
+/* ══ Brand colors ════════════════════════════════════════ */
+.brand-novent { color: #0D518C; }
+.brand-iq     { color: #218EC7; }
 
 /* ══ LOGIN ══════════════════════════════════════════════ */
 .login-body {
     min-height:100vh;
     display:flex; align-items:center; justify-content:center;
-    background: linear-gradient(135deg, #0d1b2e 0%, #1B2A47 100%);
+    background: linear-gradient(135deg, #072d52 0%, #0D518C 60%, #218EC7 100%);
 }
 .login-wrapper { width:100%; max-width:420px; padding:20px; }
 .login-card {
