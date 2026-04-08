@@ -1,0 +1,131 @@
+{
+  "site": {
+    "teamName": "Data & AI Team",
+    "company": "Noventiq Egypt",
+    "tagline": "Transforming Business Through Data & Artificial Intelligence",
+    "about": "We are the Data & AI team at Noventiq Egypt — a group of data scientists and AI engineers passionate about building intelligent, data-driven solutions. We specialize in machine learning, deep learning, LLMs, multi-agent systems, and enterprise data engineering.\n\nOur mission is to help businesses unlock the full potential of their data through cutting-edge AI technologies and actionable insights.",
+    "email": "data-ai@noventiq.com",
+    "location": "Cairo, Egypt",
+    "linkedin": "https://www.linkedin.com/company/noventiq",
+    "github": "https://github.com/noventiq-egypt"
+  },
+  "services": [
+    {
+      "id": "s1",
+      "icon": "fas fa-brain",
+      "title": "Machine Learning Solutions",
+      "description": "Designing and building predictive models for classification, regression, and clustering using Python and Scikit-learn to support business decision-making."
+    },
+    {
+      "id": "s2",
+      "icon": "fas fa-robot",
+      "title": "LLMs & RAG Systems",
+      "description": "Implementing advanced AI chat systems using Large Language Models (LLMs), Retrieval-Augmented Generation (RAG) and Fine-Tuning for smart question answering."
+    },
+    {
+      "id": "s3",
+      "icon": "fas fa-network-wired",
+      "title": "Multi-Agent AI Systems",
+      "description": "Developing intelligent multi-agent systems using CrewAI, LangChain, and Python for automation, decision-making, and complex AI workflows."
+    },
+    {
+      "id": "s4",
+      "icon": "fas fa-database",
+      "title": "Data Engineering & ETL",
+      "description": "Building ETL pipelines using Python, SQL, and SSIS to clean, transform, and organize data for data warehouses and analytics systems."
+    },
+    {
+      "id": "s5",
+      "icon": "fas fa-chart-bar",
+      "title": "Power BI Dashboards",
+      "description": "Creating powerful interactive dashboards using Power BI and DAX to visualize business data and uncover insights."
+    },
+    {
+      "id": "s6",
+      "icon": "fas fa-cloud",
+      "title": "Cloud AI Deployment",
+      "description": "Deploying machine learning and AI solutions on Azure and AWS using Docker and Streamlit for scalable production-ready applications."
+    }
+  ],
+  "skills": [
+    {
+      "id": "sk1",
+      "name": "Programming & Tools",
+      "icon": "fas fa-code",
+      "type": "bar",
+      "order": 1,
+      "skills": [
+        { "name": "Python", "level": 95 },
+        { "name": "SQL", "level": 90 },
+        { "name": "PySpark", "level": 85 },
+        { "name": "Git & GitHub", "level": 88 },
+        { "name": "Docker", "level": 80 }
+      ]
+    },
+    {
+      "id": "sk2",
+      "name": "AI & Machine Learning",
+      "icon": "fas fa-brain",
+      "type": "bar",
+      "order": 2,
+      "skills": [
+        { "name": "Machine Learning", "level": 92 },
+        { "name": "Deep Learning", "level": 88 },
+        { "name": "LLMs & RAG", "level": 85 },
+        { "name": "Predictive Analytics", "level": 90 },
+        { "name": "Data Modeling", "level": 87 }
+      ]
+    },
+    {
+      "id": "sk3",
+      "name": "Frameworks & Libraries",
+      "icon": "fas fa-cogs",
+      "type": "tag",
+      "order": 3,
+      "skills": [
+        { "name": "TensorFlow" }, { "name": "PyTorch" }, { "name": "Keras" },
+        { "name": "Scikit-learn" }, { "name": "Pandas" }, { "name": "NumPy" },
+        { "name": "Streamlit" }, { "name": "Gradio" }, { "name": "MLflow" }
+      ]
+    },
+    {
+      "id": "sk4",
+      "name": "Cloud & Data Engineering",
+      "icon": "fas fa-cloud",
+      "type": "tag",
+      "order": 4,
+      "skills": [
+        { "name": "Azure" }, { "name": "AWS" }, { "name": "Databricks" },
+        { "name": "Microsoft Fabric" }, { "name": "ETL (SSIS)" },
+        { "name": "Power BI" }, { "name": "Excel" }
+      ]
+    },
+    {
+      "id": "sk5",
+      "name": "Advanced AI",
+      "icon": "fas fa-robot",
+      "type": "tag",
+      "order": 5,
+      "skills": [
+        { "name": "Multi-Agent Systems" }, { "name": "Voice AI Agents" },
+        { "name": "Fine-Tuning" }, { "name": "Prompt Engineering" },
+        { "name": "RAG Pipelines" }, { "name": "NLP" }
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "p1",
+      "title": "GPT Sofra",
+      "category": "AI / LLM",
+      "description": "Multi-agent AI system integrating LLMs and computer vision to generate recipes, analyze food ingredients, and deliver personalized nutrition recommendations in Arabic.",
+      "longDescription": "## Overview\n\nGPT Sofra is a multi-agent AI system that integrates LLMs and computer vision...\n\n## Features\n- Recipe generation\n- Food ingredient analysis\n- Nutrition recommendations\n\n## Tech Stack\n- Python, LangChain, OpenAI",
+      "tags": ["Python", "LangChain", "Computer Vision", "LLM"],
+      "githubUrl": "https://github.com/youssef13494/Ai-Food-Assistant",
+      "projectUrl": "",
+      "videoUrl": "",
+      "image": "images/gpt_sofra.png",
+      "order": 1
+    }
+  ]
+}

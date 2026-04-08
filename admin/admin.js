@@ -1,32 +1,53 @@
-import { auth, db, storage } from '../firebase-config.js';
-import {
-    onAuthStateChanged, signOut
-} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-import {
-    collection, getDocs, addDoc, updateDoc, deleteDoc,
-    doc, query, orderBy, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-import {
-    ref as storageRef, uploadBytesResumable, getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js";
+// admin.js — JSON-based admin (no Firebase)
+// All edits modify a local copy of data.json.
+// After editing, click "Download data.json", replace the file in the repo, then push.
 
-// ─── Auth Guard ───────────────────────────────────────────────────────────────
-onAuthStateChanged(auth, user => {
-    if (!user) {
+// ── Auth (simple password) ────────────────────────────────
+const ADMIN_PASS = 'noventiq2025'; // change this!
+
+function checkAuth() {
+    if (sessionStorage.getItem('admin_auth') !== '1') {
         window.location.href = 'index.html';
-        return;
     }
-    document.getElementById('admin-email-display').textContent = user.email;
-    init();
-});
+}
+checkAuth();
 
-document.getElementById('logout-btn').addEventListener('click', async (e) => {
+document.getElementById('admin-email-display').textContent = 'Admin';
+
+document.getElementById('logout-btn').addEventListener('click', e => {
     e.preventDefault();
-    await signOut(auth);
+    sessionStorage.removeItem('admin_auth');
     window.location.href = 'index.html';
 });
 
-// ─── Sidebar & Tabs ───────────────────────────────────────────────────────────
+// ── Load data.json ────────────────────────────────────────
+let DATA = null;
+let dirty = false;
+
+async function loadData() {
+    const res = await fetch('../data.json?v=' + Date.now());
+    DATA = await res.json();
+}
+
+function markDirty() {
+    dirty = true;
+    document.getElementById('save-banner').classList.add('visible');
+}
+
+// ── Download updated data.json ────────────────────────────
+document.getElementById('download-btn').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(DATA, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = 'data.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    dirty = false;
+    document.getElementById('save-banner').classList.remove('visible');
+});
+
+// ── Sidebar & Tabs ────────────────────────────────────────
 document.getElementById('sidebar-toggle').addEventListener('click', () => {
     document.getElementById('sidebar').classList.toggle('collapsed');
     document.getElementById('dashboard-main').classList.toggle('expanded');
@@ -40,14 +61,15 @@ document.querySelectorAll('.sidebar-nav .nav-item[data-tab]').forEach(link => {
         link.classList.add('active');
         document.querySelectorAll('.tab-content-panel').forEach(p => p.classList.add('d-none'));
         document.getElementById(`tab-${tab}`).classList.remove('d-none');
-        document.getElementById('topbar-title').textContent =
-            tab === 'projects' ? 'Projects' : 'Skills';
+        const titles = { projects:'Projects', skills:'Skills', services:'Services', about:'About Team' };
+        document.getElementById('topbar-title').textContent = titles[tab] || tab;
     });
 });
 
-// ─── Utility ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────
 function show(id) { document.getElementById(id)?.classList.remove('d-none'); }
 function hide(id) { document.getElementById(id)?.classList.add('d-none'); }
+function uid()    { return 'id_' + Math.random().toString(36).slice(2, 10); }
 
 function showMsg(id, msg, type = 'danger') {
     const el = document.getElementById(id);
@@ -55,161 +77,81 @@ function showMsg(id, msg, type = 'danger') {
     el.className = `alert alert-${type} py-2`;
     el.textContent = msg;
     el.classList.remove('d-none');
-    setTimeout(() => el.classList.add('d-none'), 4000);
+    setTimeout(() => el.classList.add('d-none'), 3500);
 }
 
-function setLoading(btnId, spinnerId, textId, loading, text = '') {
-    const btn = document.getElementById(btnId);
-    const spinner = document.getElementById(spinnerId);
-    const textEl = document.getElementById(textId);
-    if (!btn) return;
-    btn.disabled = loading;
-    spinner?.classList.toggle('d-none', !loading);
-    if (textEl && text) textEl.textContent = text;
-}
-
-function parseTags(str) {
-    return str.split(',').map(t => t.trim()).filter(Boolean);
-}
-
-// ─── File Upload ──────────────────────────────────────────────────────────────
-function uploadFile(file, path, progressBarId) {
-    return new Promise((resolve, reject) => {
-        const sRef = storageRef(storage, path);
-        const task = uploadBytesResumable(sRef, file);
-        const progressWrap = document.getElementById(progressBarId)?.closest('.upload-progress');
-        const bar = document.getElementById(progressBarId)?.querySelector?.('.progress-bar')
-            ?? document.querySelector(`#${progressBarId} .progress-bar`);
-
-        if (progressWrap) progressWrap.classList.remove('d-none');
-
-        task.on('state_changed',
-            snap => {
-                const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
-                if (bar) bar.style.width = pct + '%';
-            },
-            reject,
-            async () => {
-                const url = await getDownloadURL(task.snapshot.ref);
-                if (progressWrap) progressWrap.classList.add('d-none');
-                resolve(url);
-            }
-        );
-    });
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// PROJECTS
-// ══════════════════════════════════════════════════════════════════════════════
-
-let editingProjectId = null;
-const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+const deleteModal  = new bootstrap.Modal(document.getElementById('deleteModal'));
 let pendingDeleteFn = null;
-
 document.getElementById('confirm-delete-btn').addEventListener('click', () => {
     if (pendingDeleteFn) pendingDeleteFn();
     deleteModal.hide();
 });
-
-function confirmDelete(message, fn) {
-    document.getElementById('delete-modal-text').textContent = message;
+function confirmDelete(msg, fn) {
+    document.getElementById('delete-modal-text').textContent = msg;
     pendingDeleteFn = fn;
     deleteModal.show();
 }
 
-// Load projects
-async function loadProjects() {
-    hide('projects-table-wrap');
-    hide('projects-empty');
-    show('projects-loading');
+// ══════════════════════════════════════════════════════════
+// PROJECTS
+// ══════════════════════════════════════════════════════════
+let editingProjectId = null;
 
-    try {
-        const q = query(collection(db, 'projects'), orderBy('order', 'asc'));
-        const snap = await getDocs(q);
-        hide('projects-loading');
-
-        if (snap.empty) { show('projects-empty'); return; }
-
-        show('projects-table-wrap');
-        const tbody = document.getElementById('projects-tbody');
-        tbody.innerHTML = '';
-        snap.forEach(d => renderProjectRow({ id: d.id, ...d.data() }));
-    } catch (err) {
-        hide('projects-loading');
-        console.error(err);
-        show('projects-empty');
-    }
-}
-
-function renderProjectRow(p) {
+function renderProjects() {
+    const projects = (DATA.projects || []).sort((a, b) => (a.order||0)-(b.order||0));
+    hide('projects-loading');
+    if (!projects.length) { show('projects-empty'); hide('projects-table-wrap'); return; }
+    show('projects-table-wrap'); hide('projects-empty');
     const tbody = document.getElementById('projects-tbody');
-    const tr = document.createElement('tr');
-    tr.dataset.id = p.id;
-    tr.innerHTML = `
-        <td>
-            ${p.image ? `<img src="${p.image}" alt="" class="table-thumb">` : '<i class="fas fa-image text-muted"></i>'}
-        </td>
-        <td><strong>${p.title}</strong></td>
-        <td>${p.category || '–'}</td>
-        <td><small class="text-muted">${(p.tags || []).join(', ') || '–'}</small></td>
-        <td class="text-center">${p.order || 1}</td>
-        <td>
-            <button class="btn btn-sm btn-outline-primary me-1 btn-edit-project" title="Edit">
-                <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger btn-delete-project" title="Delete">
-                <i class="fas fa-trash"></i>
-            </button>
-        </td>`;
-    tbody.appendChild(tr);
-
-    tr.querySelector('.btn-edit-project').addEventListener('click', () => openProjectForm(p));
-    tr.querySelector('.btn-delete-project').addEventListener('click', () => {
-        confirmDelete(`Delete project "${p.title}"? This cannot be undone.`, async () => {
-            await deleteDoc(doc(db, 'projects', p.id));
-            tr.remove();
-            if (!document.getElementById('projects-tbody').children.length) {
-                hide('projects-table-wrap');
-                show('projects-empty');
-            }
+    tbody.innerHTML = '';
+    projects.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${p.image ? `<img src="../${p.image}" alt="" class="table-thumb" onerror="this.style.display='none'">` : '<i class="fas fa-image text-muted"></i>'}</td>
+            <td><strong>${p.title}</strong></td>
+            <td>${p.category || '–'}</td>
+            <td><small class="text-muted">${(p.tags||[]).join(', ')||'–'}</small></td>
+            <td class="text-center">${p.order||1}</td>
+            <td>
+                <button type="button" class="btn btn-sm btn-outline-primary me-1" title="Edit"><i class="fas fa-edit"></i></button>
+                <button type="button" class="btn btn-sm btn-outline-danger" title="Delete"><i class="fas fa-trash"></i></button>
+            </td>`;
+        tr.querySelectorAll('button')[0].addEventListener('click', () => openProjectForm(p));
+        tr.querySelectorAll('button')[1].addEventListener('click', () => {
+            confirmDelete(`Delete project "${p.title}"?`, () => {
+                DATA.projects = DATA.projects.filter(x => x.id !== p.id);
+                markDirty(); renderProjects();
+            });
         });
+        tbody.appendChild(tr);
     });
 }
 
-// Open form
 document.getElementById('btn-add-project').addEventListener('click', () => openProjectForm(null));
 document.getElementById('project-cancel-btn').addEventListener('click', closeProjectForm);
 
-function openProjectForm(project) {
-    editingProjectId = project?.id || null;
-    document.getElementById('project-form-title').textContent = project ? 'Edit Project' : 'Add New Project';
-    document.getElementById('project-submit-text').textContent = project ? 'Update Project' : 'Save Project';
+function openProjectForm(p) {
+    editingProjectId = p?.id || null;
+    document.getElementById('project-form-title').textContent   = p ? 'Edit Project' : 'Add New Project';
+    document.getElementById('project-submit-text').textContent  = p ? 'Update Project' : 'Save Project';
+    document.getElementById('project-id').value                 = p?.id || '';
+    document.getElementById('p-title').value                    = p?.title || '';
+    document.getElementById('p-category').value                 = p?.category || '';
+    document.getElementById('p-order').value                    = p?.order || 1;
+    document.getElementById('p-description').value              = p?.description || '';
+    document.getElementById('p-long-description').value         = p?.longDescription || '';
+    document.getElementById('p-tags').value                     = (p?.tags||[]).join(', ');
+    document.getElementById('p-github').value                   = p?.githubUrl || '';
+    document.getElementById('p-url').value                      = p?.projectUrl || '';
+    document.getElementById('p-image-url').value                = p?.image || '';
+    document.getElementById('p-video-url').value                = p?.videoUrl || '';
 
-    // Fill fields
-    document.getElementById('project-id').value            = project?.id || '';
-    document.getElementById('p-title').value               = project?.title || '';
-    document.getElementById('p-category').value            = project?.category || '';
-    document.getElementById('p-order').value               = project?.order || 1;
-    document.getElementById('p-description').value         = project?.description || '';
-    document.getElementById('p-long-description').value    = project?.longDescription || '';
-    document.getElementById('p-tags').value                = (project?.tags || []).join(', ');
-    document.getElementById('p-github').value              = project?.githubUrl || '';
-    document.getElementById('p-url').value                 = project?.projectUrl || '';
-    document.getElementById('p-image-url').value           = project?.image || '';
-    document.getElementById('p-video-url').value           = project?.videoUrl || '';
-    document.getElementById('p-image-file').value          = '';
-    document.getElementById('p-video-file').value          = '';
-
-    // Image preview
-    if (project?.image) {
-        document.getElementById('p-image-preview-img').src = project.image;
+    if (p?.image) {
+        document.getElementById('p-image-preview-img').src = '../' + p.image;
         show('p-image-preview');
-    } else {
-        hide('p-image-preview');
-    }
+    } else { hide('p-image-preview'); }
 
-    hide('project-form-error');
-    hide('project-form-success');
+    hide('project-form-error'); hide('project-form-success');
     show('project-form-panel');
     document.getElementById('project-form-panel').scrollIntoView({ behavior: 'smooth' });
 }
@@ -220,207 +162,121 @@ function closeProjectForm() {
     document.getElementById('project-form').reset();
 }
 
-// Image URL preview
 document.getElementById('p-image-url').addEventListener('input', function () {
     if (this.value) {
-        document.getElementById('p-image-preview-img').src = this.value;
+        const src = this.value.startsWith('http') ? this.value : '../' + this.value;
+        document.getElementById('p-image-preview-img').src = src;
         show('p-image-preview');
-    } else {
-        hide('p-image-preview');
-    }
+    } else { hide('p-image-preview'); }
 });
 
-document.getElementById('p-image-file').addEventListener('change', function () {
-    if (this.files[0]) {
-        document.getElementById('p-image-preview-img').src = URL.createObjectURL(this.files[0]);
-        show('p-image-preview');
-        document.getElementById('p-image-url').value = '';
-    }
-});
-
-// Submit project
-document.getElementById('project-form').addEventListener('submit', async (e) => {
+document.getElementById('project-form').addEventListener('submit', e => {
     e.preventDefault();
-    setLoading('project-submit-btn', 'project-submit-spinner', 'project-submit-text', true, 'Saving…');
+    const title       = document.getElementById('p-title').value.trim();
+    const description = document.getElementById('p-description').value.trim();
+    if (!title || !description) { showMsg('project-form-error', 'Title and short description are required.'); return; }
 
-    try {
-        let imageUrl  = document.getElementById('p-image-url').value.trim();
-        let videoUrl  = document.getElementById('p-video-url').value.trim();
-        const imageFile = document.getElementById('p-image-file').files[0];
-        const videoFile = document.getElementById('p-video-file').files[0];
+    const project = {
+        id:              editingProjectId || uid(),
+        title,
+        category:        document.getElementById('p-category').value.trim(),
+        order:           parseInt(document.getElementById('p-order').value) || 1,
+        description,
+        longDescription: document.getElementById('p-long-description').value.trim(),
+        tags:            document.getElementById('p-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+        githubUrl:       document.getElementById('p-github').value.trim(),
+        projectUrl:      document.getElementById('p-url').value.trim(),
+        image:           document.getElementById('p-image-url').value.trim(),
+        videoUrl:        document.getElementById('p-video-url').value.trim(),
+    };
 
-        // Upload image if file selected
-        if (imageFile) {
-            imageUrl = await uploadFile(
-                imageFile,
-                `projects/images/${Date.now()}_${imageFile.name}`,
-                'p-image-progress'
-            );
-        }
-
-        // Upload video if file selected
-        if (videoFile) {
-            videoUrl = await uploadFile(
-                videoFile,
-                `projects/videos/${Date.now()}_${videoFile.name}`,
-                'p-video-progress'
-            );
-        }
-
-        const data = {
-            title:           document.getElementById('p-title').value.trim(),
-            category:        document.getElementById('p-category').value.trim(),
-            order:           parseInt(document.getElementById('p-order').value) || 1,
-            description:     document.getElementById('p-description').value.trim(),
-            longDescription: document.getElementById('p-long-description').value.trim(),
-            tags:            parseTags(document.getElementById('p-tags').value),
-            githubUrl:       document.getElementById('p-github').value.trim(),
-            projectUrl:      document.getElementById('p-url').value.trim(),
-            image:           imageUrl,
-            videoUrl:        videoUrl,
-            updatedAt:       serverTimestamp()
-        };
-
-        if (!data.title || !data.description) {
-            throw new Error('Title and short description are required.');
-        }
-
-        if (editingProjectId) {
-            await updateDoc(doc(db, 'projects', editingProjectId), data);
-            showMsg('project-form-success', 'Project updated successfully!', 'success');
-        } else {
-            data.createdAt = serverTimestamp();
-            await addDoc(collection(db, 'projects'), data);
-            showMsg('project-form-success', 'Project added successfully!', 'success');
-        }
-
-        closeProjectForm();
-        await loadProjects();
-
-    } catch (err) {
-        console.error(err);
-        showMsg('project-form-error', err.message || 'Something went wrong.');
-    } finally {
-        setLoading('project-submit-btn', 'project-submit-spinner', 'project-submit-text', false,
-            editingProjectId ? 'Update Project' : 'Save Project');
+    if (editingProjectId) {
+        const idx = DATA.projects.findIndex(x => x.id === editingProjectId);
+        if (idx > -1) DATA.projects[idx] = project;
+    } else {
+        DATA.projects = DATA.projects || [];
+        DATA.projects.push(project);
     }
+
+    markDirty();
+    showMsg('project-form-success', editingProjectId ? 'Project updated!' : 'Project added!', 'success');
+    setTimeout(() => { closeProjectForm(); renderProjects(); }, 800);
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // SKILLS
-// ══════════════════════════════════════════════════════════════════════════════
-
+// ══════════════════════════════════════════════════════════
 let editingSkillId = null;
 
-async function loadSkillCategories() {
-    hide('skills-table-wrap');
-    hide('skills-empty');
-    show('skills-loading');
-
-    try {
-        const q = query(collection(db, 'skills'), orderBy('order', 'asc'));
-        const snap = await getDocs(q);
-        hide('skills-loading');
-
-        if (snap.empty) { show('skills-empty'); return; }
-
-        show('skills-table-wrap');
-        const tbody = document.getElementById('skills-tbody');
-        tbody.innerHTML = '';
-        snap.forEach(d => renderSkillRow({ id: d.id, ...d.data() }));
-    } catch (err) {
-        hide('skills-loading');
-        console.error(err);
-        show('skills-empty');
-    }
-}
-
-function renderSkillRow(cat) {
+function renderSkills() {
+    const cats = (DATA.skills || []).sort((a, b) => (a.order||0)-(b.order||0));
+    hide('skills-loading');
+    if (!cats.length) { show('skills-empty'); hide('skills-table-wrap'); return; }
+    show('skills-table-wrap'); hide('skills-empty');
     const tbody = document.getElementById('skills-tbody');
-    const tr = document.createElement('tr');
-    tr.dataset.id = cat.id;
-    tr.innerHTML = `
-        <td><strong>${cat.name}</strong></td>
-        <td><i class="${cat.icon || ''}"></i> <small class="text-muted">${cat.icon || '–'}</small></td>
-        <td><span class="badge ${cat.type === 'bar' ? 'bg-primary' : 'bg-success'}">${cat.type}</span></td>
-        <td>${(cat.skills || []).length} skills</td>
-        <td class="text-center">${cat.order || 1}</td>
-        <td>
-            <button class="btn btn-sm btn-outline-primary me-1 btn-edit-skill" title="Edit">
-                <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger btn-delete-skill" title="Delete">
-                <i class="fas fa-trash"></i>
-            </button>
-        </td>`;
-    tbody.appendChild(tr);
-
-    tr.querySelector('.btn-edit-skill').addEventListener('click', () => openSkillForm(cat));
-    tr.querySelector('.btn-delete-skill').addEventListener('click', () => {
-        confirmDelete(`Delete skill category "${cat.name}"?`, async () => {
-            await deleteDoc(doc(db, 'skills', cat.id));
-            tr.remove();
-            if (!document.getElementById('skills-tbody').children.length) {
-                hide('skills-table-wrap');
-                show('skills-empty');
-            }
+    tbody.innerHTML = '';
+    cats.forEach(cat => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${cat.name}</strong></td>
+            <td><i class="${cat.icon||''}"></i> <small class="text-muted">${cat.icon||'–'}</small></td>
+            <td><span class="badge ${cat.type==='bar'?'bg-primary':'bg-success'}">${cat.type}</span></td>
+            <td>${(cat.skills||[]).length} skills</td>
+            <td class="text-center">${cat.order||1}</td>
+            <td>
+                <button type="button" class="btn btn-sm btn-outline-primary me-1" title="Edit"><i class="fas fa-edit"></i></button>
+                <button type="button" class="btn btn-sm btn-outline-danger" title="Delete"><i class="fas fa-trash"></i></button>
+            </td>`;
+        tr.querySelectorAll('button')[0].addEventListener('click', () => openSkillForm(cat));
+        tr.querySelectorAll('button')[1].addEventListener('click', () => {
+            confirmDelete(`Delete skill category "${cat.name}"?`, () => {
+                DATA.skills = DATA.skills.filter(x => x.id !== cat.id);
+                markDirty(); renderSkills();
+            });
         });
+        tbody.appendChild(tr);
     });
 }
 
-// Skill type toggle (show/hide level input)
-document.getElementById('s-type').addEventListener('change', updateSkillItemInputs);
-
-function updateSkillItemInputs() {
-    const isBar = document.getElementById('s-type').value === 'bar';
-    document.querySelectorAll('.skill-level-wrap').forEach(el => {
-        el.classList.toggle('d-none', !isBar);
-    });
-}
-
-// Add skill item row
+document.getElementById('btn-add-skill').addEventListener('click', () => openSkillForm(null));
+document.getElementById('skill-cancel-btn').addEventListener('click', closeSkillForm);
+document.getElementById('s-type').addEventListener('change', updateSkillLevelVisibility);
 document.getElementById('add-skill-item').addEventListener('click', () => addSkillItemRow());
+
+function updateSkillLevelVisibility() {
+    const isBar = document.getElementById('s-type').value === 'bar';
+    document.querySelectorAll('.skill-level-wrap').forEach(el => el.classList.toggle('d-none', !isBar));
+}
 
 function addSkillItemRow(name = '', level = 80) {
     const isBar = document.getElementById('s-type').value === 'bar';
-    const list = document.getElementById('skills-list');
-    const row = document.createElement('div');
+    const list  = document.getElementById('skills-list');
+    const row   = document.createElement('div');
     row.className = 'skill-input-row';
     row.innerHTML = `
-        <input type="text" class="form-control skill-name-input" placeholder="Skill name" value="${name}">
+        <input type="text" class="form-control skill-name-input" placeholder="Skill name" value="${name}" aria-label="Skill name">
         <div class="skill-level-wrap ${isBar ? '' : 'd-none'}">
-            <input type="number" class="form-control skill-level-input" placeholder="%" value="${level}" min="1" max="100" style="width:80px">
+            <input type="number" class="form-control skill-level-input" placeholder="%" value="${level}" min="1" max="100" style="width:80px" aria-label="Skill level percentage">
             <span class="text-muted">%</span>
         </div>
-        <button type="button" class="btn btn-sm btn-outline-danger remove-skill-row">
-            <i class="fas fa-times"></i>
-        </button>`;
+        <button type="button" class="btn btn-sm btn-outline-danger remove-skill-row" title="Remove skill"><i class="fas fa-times"></i></button>`;
     row.querySelector('.remove-skill-row').addEventListener('click', () => row.remove());
     list.appendChild(row);
 }
 
-// Open skill form
-document.getElementById('btn-add-skill').addEventListener('click', () => openSkillForm(null));
-document.getElementById('skill-cancel-btn').addEventListener('click', closeSkillForm);
-
 function openSkillForm(cat) {
     editingSkillId = cat?.id || null;
-    document.getElementById('skill-form-title').textContent = cat ? 'Edit Skill Category' : 'Add Skill Category';
+    document.getElementById('skill-form-title').textContent  = cat ? 'Edit Skill Category' : 'Add Skill Category';
     document.getElementById('skill-submit-text').textContent = cat ? 'Update Category' : 'Save Category';
-
-    document.getElementById('skill-id').value  = cat?.id || '';
-    document.getElementById('s-name').value    = cat?.name || '';
-    document.getElementById('s-icon').value    = cat?.icon || '';
-    document.getElementById('s-type').value    = cat?.type || 'bar';
-    document.getElementById('s-order').value   = cat?.order || 1;
-
-    // Render existing skills
+    document.getElementById('skill-id').value   = cat?.id || '';
+    document.getElementById('s-name').value     = cat?.name || '';
+    document.getElementById('s-icon').value     = cat?.icon || '';
+    document.getElementById('s-type').value     = cat?.type || 'bar';
+    document.getElementById('s-order').value    = cat?.order || 1;
     document.getElementById('skills-list').innerHTML = '';
     (cat?.skills || []).forEach(s => addSkillItemRow(s.name, s.level || 80));
     if (!cat?.skills?.length) addSkillItemRow();
-
-    hide('skill-form-error');
-    hide('skill-form-success');
+    hide('skill-form-error'); hide('skill-form-success');
     show('skill-form-panel');
     document.getElementById('skill-form-panel').scrollIntoView({ behavior: 'smooth' });
 }
@@ -432,56 +288,160 @@ function closeSkillForm() {
     document.getElementById('skills-list').innerHTML = '';
 }
 
-// Submit skill
-document.getElementById('skill-form').addEventListener('submit', async (e) => {
+document.getElementById('skill-form').addEventListener('submit', e => {
     e.preventDefault();
-    setLoading('skill-submit-btn', 'skill-submit-spinner', 'skill-submit-text', true, 'Saving…');
+    const name = document.getElementById('s-name').value.trim();
+    if (!name) { showMsg('skill-form-error', 'Category name is required.'); return; }
 
-    try {
-        const name  = document.getElementById('s-name').value.trim();
-        const icon  = document.getElementById('s-icon').value.trim();
-        const type  = document.getElementById('s-type').value;
-        const order = parseInt(document.getElementById('s-order').value) || 1;
-        const isBar = type === 'bar';
+    const type   = document.getElementById('s-type').value;
+    const isBar  = type === 'bar';
+    const skills = [];
+    document.querySelectorAll('.skill-input-row').forEach(row => {
+        const skillName = row.querySelector('.skill-name-input').value.trim();
+        if (!skillName) return;
+        const entry = { name: skillName };
+        if (isBar) entry.level = parseInt(row.querySelector('.skill-level-input')?.value) || 80;
+        skills.push(entry);
+    });
 
-        if (!name) throw new Error('Category name is required.');
+    const cat = {
+        id:    editingSkillId || uid(),
+        name,
+        icon:  document.getElementById('s-icon').value.trim(),
+        type,
+        order: parseInt(document.getElementById('s-order').value) || 1,
+        skills
+    };
 
-        const skills = [];
-        document.querySelectorAll('.skill-input-row').forEach(row => {
-            const skillName = row.querySelector('.skill-name-input').value.trim();
-            if (!skillName) return;
-            const entry = { name: skillName };
-            if (isBar) {
-                entry.level = parseInt(row.querySelector('.skill-level-input')?.value) || 80;
-            }
-            skills.push(entry);
-        });
-
-        const data = { name, icon, type, order, skills, updatedAt: serverTimestamp() };
-
-        if (editingSkillId) {
-            await updateDoc(doc(db, 'skills', editingSkillId), data);
-            showMsg('skill-form-success', 'Category updated successfully!', 'success');
-        } else {
-            data.createdAt = serverTimestamp();
-            await addDoc(collection(db, 'skills'), data);
-            showMsg('skill-form-success', 'Category added successfully!', 'success');
-        }
-
-        closeSkillForm();
-        await loadSkillCategories();
-
-    } catch (err) {
-        console.error(err);
-        showMsg('skill-form-error', err.message || 'Something went wrong.');
-    } finally {
-        setLoading('skill-submit-btn', 'skill-submit-spinner', 'skill-submit-text', false,
-            editingSkillId ? 'Update Category' : 'Save Category');
+    if (editingSkillId) {
+        const idx = DATA.skills.findIndex(x => x.id === editingSkillId);
+        if (idx > -1) DATA.skills[idx] = cat;
+    } else {
+        DATA.skills = DATA.skills || [];
+        DATA.skills.push(cat);
     }
+
+    markDirty();
+    showMsg('skill-form-success', editingSkillId ? 'Category updated!' : 'Category added!', 'success');
+    setTimeout(() => { closeSkillForm(); renderSkills(); }, 800);
 });
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
-function init() {
-    loadProjects();
-    loadSkillCategories();
+// ══════════════════════════════════════════════════════════
+// SERVICES
+// ══════════════════════════════════════════════════════════
+let editingServiceId = null;
+
+function renderServices() {
+    const services = DATA.services || [];
+    hide('services-loading');
+    if (!services.length) { show('services-empty'); hide('services-table-wrap'); return; }
+    show('services-table-wrap'); hide('services-empty');
+    const tbody = document.getElementById('services-tbody');
+    tbody.innerHTML = '';
+    services.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><i class="${s.icon||'fas fa-star'} fa-lg" style="color:var(--accent)"></i></td>
+            <td><strong>${s.title}</strong></td>
+            <td><small class="text-muted">${s.description.substring(0, 80)}…</small></td>
+            <td>
+                <button type="button" class="btn btn-sm btn-outline-primary me-1" title="Edit"><i class="fas fa-edit"></i></button>
+                <button type="button" class="btn btn-sm btn-outline-danger" title="Delete"><i class="fas fa-trash"></i></button>
+            </td>`;
+        tr.querySelectorAll('button')[0].addEventListener('click', () => openServiceForm(s));
+        tr.querySelectorAll('button')[1].addEventListener('click', () => {
+            confirmDelete(`Delete service "${s.title}"?`, () => {
+                DATA.services = DATA.services.filter(x => x.id !== s.id);
+                markDirty(); renderServices();
+            });
+        });
+        tbody.appendChild(tr);
+    });
 }
+
+document.getElementById('btn-add-service').addEventListener('click', () => openServiceForm(null));
+document.getElementById('service-cancel-btn').addEventListener('click', closeServiceForm);
+
+function openServiceForm(s) {
+    editingServiceId = s?.id || null;
+    document.getElementById('service-form-title').textContent  = s ? 'Edit Service' : 'Add Service';
+    document.getElementById('service-submit-text').textContent = s ? 'Update Service' : 'Save Service';
+    document.getElementById('service-id').value           = s?.id || '';
+    document.getElementById('sv-title').value             = s?.title || '';
+    document.getElementById('sv-icon').value              = s?.icon || '';
+    document.getElementById('sv-description').value       = s?.description || '';
+    hide('service-form-error'); hide('service-form-success');
+    show('service-form-panel');
+    document.getElementById('service-form-panel').scrollIntoView({ behavior: 'smooth' });
+}
+
+function closeServiceForm() {
+    hide('service-form-panel');
+    editingServiceId = null;
+    document.getElementById('service-form').reset();
+}
+
+document.getElementById('service-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const title       = document.getElementById('sv-title').value.trim();
+    const description = document.getElementById('sv-description').value.trim();
+    if (!title || !description) { showMsg('service-form-error', 'Title and description are required.'); return; }
+
+    const service = {
+        id:          editingServiceId || uid(),
+        icon:        document.getElementById('sv-icon').value.trim() || 'fas fa-star',
+        title,
+        description
+    };
+
+    if (editingServiceId) {
+        const idx = DATA.services.findIndex(x => x.id === editingServiceId);
+        if (idx > -1) DATA.services[idx] = service;
+    } else {
+        DATA.services = DATA.services || [];
+        DATA.services.push(service);
+    }
+
+    markDirty();
+    showMsg('service-form-success', editingServiceId ? 'Service updated!' : 'Service added!', 'success');
+    setTimeout(() => { closeServiceForm(); renderServices(); }, 800);
+});
+
+// ══════════════════════════════════════════════════════════
+// ABOUT TEAM
+// ══════════════════════════════════════════════════════════
+function loadAboutForm() {
+    const s = DATA.site || {};
+    document.getElementById('a-teamname').value  = s.teamName || '';
+    document.getElementById('a-company').value   = s.company  || '';
+    document.getElementById('a-tagline').value   = s.tagline  || '';
+    document.getElementById('a-about').value     = s.about    || '';
+    document.getElementById('a-location').value  = s.location || '';
+    document.getElementById('a-email').value     = s.email    || '';
+    document.getElementById('a-linkedin').value  = s.linkedin || '';
+    document.getElementById('a-github').value    = s.github   || '';
+}
+
+document.getElementById('btn-save-about').addEventListener('click', () => {
+    DATA.site = {
+        teamName: document.getElementById('a-teamname').value.trim(),
+        company:  document.getElementById('a-company').value.trim(),
+        tagline:  document.getElementById('a-tagline').value.trim(),
+        about:    document.getElementById('a-about').value.trim(),
+        location: document.getElementById('a-location').value.trim(),
+        email:    document.getElementById('a-email').value.trim(),
+        linkedin: document.getElementById('a-linkedin').value.trim(),
+        github:   document.getElementById('a-github').value.trim(),
+    };
+    markDirty();
+    showMsg('about-form-success', 'About info saved! Download data.json to apply changes.', 'success');
+});
+
+// ── Init ──────────────────────────────────────────────────
+(async () => {
+    await loadData();
+    renderProjects();
+    renderSkills();
+    renderServices();
+    loadAboutForm();
+})();

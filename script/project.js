@@ -1,132 +1,86 @@
-import { db } from '../firebase-config.js';
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// project.js — loads project from data.json (no Firebase)
 
 function getYoutubeEmbedUrl(url) {
     if (!url) return null;
-    // youtu.be/ID
     let m = url.match(/youtu\.be\/([^?&\s]+)/);
     if (m) return `https://www.youtube.com/embed/${m[1]}`;
-    // youtube.com/watch?v=ID
     m = url.match(/[?&]v=([^&\s]+)/);
     if (m) return `https://www.youtube.com/embed/${m[1]}`;
-    // already an embed URL
     if (url.includes('/embed/')) return url;
     return null;
 }
 
-function isVideoFile(url) {
-    if (!url) return false;
-    return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
-}
+function show(id) { document.getElementById(id)?.classList.remove('d-none'); }
+function hide(id) { document.getElementById(id)?.classList.add('d-none'); }
 
-function show(id) { document.getElementById(id).classList.remove('d-none'); }
-function hide(id) { document.getElementById(id).classList.add('d-none'); }
+function renderProject(p) {
+    document.title = `${p.title} – Noventiq Data & AI`;
 
-// ─── Render ──────────────────────────────────────────────────────────────────
-
-function renderProject(project) {
-    // Page title
-    document.title = `${project.title} – Youssef Hatem`;
-
-    // Video / Image hero
+    // Hero: video or image
     const vc = document.getElementById('video-container');
-    const embedUrl = getYoutubeEmbedUrl(project.videoUrl);
-
+    const embedUrl = getYoutubeEmbedUrl(p.videoUrl);
     if (embedUrl) {
-        vc.innerHTML = `
-            <div class="video-wrapper">
-                <iframe src="${embedUrl}"
-                    title="${project.title}"
-                    frameborder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen>
-                </iframe>
-            </div>`;
-    } else if (project.videoUrl && isVideoFile(project.videoUrl)) {
-        vc.innerHTML = `
-            <div class="video-wrapper">
-                <video controls>
-                    <source src="${project.videoUrl}">
-                    Your browser does not support the video tag.
-                </video>
-            </div>`;
-    } else if (project.image) {
-        vc.innerHTML = `<img src="${project.image}" alt="${project.title}" class="project-hero-img">`;
+        vc.innerHTML = `<div class="video-wrapper">
+            <iframe src="${embedUrl}" title="${p.title}" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe></div>`;
+    } else if (p.videoUrl && /\.(mp4|webm|ogg)(\?|$)/i.test(p.videoUrl)) {
+        vc.innerHTML = `<div class="video-wrapper"><video controls><source src="${p.videoUrl}"></video></div>`;
+    } else if (p.image) {
+        vc.innerHTML = `<img src="${p.image}" alt="${p.title}" class="project-hero-img">`;
     }
 
     // Tags
-    const tagsHtml = (project.tags || []).map(t => `<span class="project-tag">${t}</span>`).join('');
+    const tagsHtml = (p.tags || []).map(t => `<span class="project-tag">${t}</span>`).join('');
     document.getElementById('project-tags').innerHTML = tagsHtml;
-    document.getElementById('meta-tags').textContent = (project.tags || []).join(', ') || '—';
+    document.getElementById('meta-tags').textContent = (p.tags || []).join(', ') || '—';
 
-    // Title
-    document.getElementById('project-title').textContent = project.title;
+    document.getElementById('project-title').textContent = p.title;
 
-    // Category
-    if (project.category) {
-        document.getElementById('meta-category-val').textContent = project.category;
+    if (p.category) {
+        document.getElementById('meta-category-val').textContent = p.category;
         show('meta-category');
     }
 
-    // Live demo button
-    if (project.projectUrl) {
-        const btn = document.getElementById('btn-live');
-        const metaBtn = document.getElementById('meta-btn-live');
-        btn.href = project.projectUrl;
-        metaBtn.href = project.projectUrl;
-        btn.classList.remove('d-none');
-        metaBtn.classList.remove('d-none');
+    if (p.projectUrl) {
+        document.getElementById('btn-live').href     = p.projectUrl;
+        document.getElementById('meta-btn-live').href = p.projectUrl;
+        document.getElementById('btn-live').classList.remove('d-none');
+        document.getElementById('meta-btn-live').classList.remove('d-none');
+    }
+    if (p.githubUrl) {
+        document.getElementById('btn-github').href     = p.githubUrl;
+        document.getElementById('meta-btn-github').href = p.githubUrl;
+        document.getElementById('btn-github').classList.remove('d-none');
+        document.getElementById('meta-btn-github').classList.remove('d-none');
     }
 
-    // GitHub button
-    if (project.githubUrl) {
-        const btn = document.getElementById('btn-github');
-        const metaBtn = document.getElementById('meta-btn-github');
-        btn.href = project.githubUrl;
-        metaBtn.href = project.githubUrl;
-        btn.classList.remove('d-none');
-        metaBtn.classList.remove('d-none');
-    }
-
-    // Long description (markdown)
     const descEl = document.getElementById('project-description');
-    if (project.longDescription) {
-        descEl.innerHTML = marked.parse(project.longDescription);
-    } else if (project.description) {
-        descEl.innerHTML = `<p>${project.description}</p>`;
+    if (p.longDescription && window.marked) {
+        descEl.innerHTML = marked.parse(p.longDescription);
+    } else if (p.description) {
+        descEl.innerHTML = `<p>${p.description}</p>`;
     }
 }
-
-// ─── Init ─────────────────────────────────────────────────────────────────────
 
 async function init() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
 
-    if (!id) {
-        hide('loading-state');
-        show('error-state');
-        return;
-    }
+    if (!id) { hide('loading-state'); show('error-state'); return; }
 
     try {
-        const ref = doc(db, 'projects', id);
-        const snap = await getDoc(ref);
+        const res  = await fetch('data.json?v=' + Date.now());
+        const data = await res.json();
+        const project = (data.projects || []).find(p => p.id === id);
 
         hide('loading-state');
+        if (!project) { show('error-state'); return; }
 
-        if (!snap.exists()) {
-            show('error-state');
-            return;
-        }
-
-        renderProject({ id: snap.id, ...snap.data() });
+        renderProject(project);
         show('project-content');
-
     } catch (err) {
-        console.error('loadProject:', err);
+        console.error(err);
         hide('loading-state');
         show('error-state');
     }

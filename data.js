@@ -1,49 +1,66 @@
-import { db } from './firebase-config.js';
-import {
-    collection, getDocs, query, orderBy
-} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+// data.js — loads everything from data.json (no Firebase)
 
-// ─── Projects ───────────────────────────────────────────────────────────────
+async function loadData() {
+    const res = await fetch('data.json?v=' + Date.now());
+    if (!res.ok) throw new Error('Failed to load data.json');
+    return res.json();
+}
 
-async function loadProjects() {
+// ── Site info ────────────────────────────────────────────
+async function loadSiteInfo(data) {
+    const s = data.site;
+    if (!s) return;
+
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.textContent = val; };
+    const setHref = (id, val) => { const el = document.getElementById(id); if (el && val) el.href = val; };
+
+    set('hero-tagline', s.tagline);
+    set('about-team-name', `${s.teamName} · ${s.company}`);
+    set('about-location', s.location);
+    set('about-email', s.email);
+    set('contact-location', s.location);
+    set('contact-email', s.email);
+
+    const aboutDesc = document.getElementById('about-description');
+    if (aboutDesc && s.about) {
+        aboutDesc.innerHTML = s.about.split('\n\n').map(p => `<p>${p}</p>`).join('');
+    }
+
+    const linkedinEl = document.getElementById('contact-linkedin');
+    if (linkedinEl && s.linkedin) {
+        linkedinEl.href = s.linkedin;
+        linkedinEl.textContent = s.company || 'Noventiq';
+    }
+    setHref('social-github', s.github);
+    setHref('social-linkedin', s.linkedin);
+}
+
+// ── Projects ─────────────────────────────────────────────
+async function loadProjects(data) {
     const grid = document.getElementById('portfolio-grid');
     if (!grid) return;
 
-    grid.innerHTML = `
-        <div class="col-12 text-center py-5">
-            <div class="spinner-border" style="color:var(--accent-color)" role="status"></div>
-        </div>`;
+    const projects = (data.projects || []).sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    try {
-        const q = query(collection(db, 'projects'), orderBy('order', 'asc'));
-        const snap = await getDocs(q);
+    // update stat counter
+    const statEl = document.getElementById('stat-projects');
+    if (statEl) statEl.textContent = projects.length;
 
-        if (snap.empty) {
-            grid.innerHTML = `<div class="col-12 text-center"><p class="text-muted">No projects added yet.</p></div>`;
-            return;
-        }
-
-        grid.innerHTML = '';
-        snap.forEach(doc => {
-            grid.insertAdjacentHTML('beforeend', projectCard({ id: doc.id, ...doc.data() }));
-        });
-
-        if (window.AOS) AOS.refresh();
-
-    } catch (err) {
-        console.error('loadProjects:', err);
-        grid.innerHTML = `<div class="col-12 text-center"><p class="text-danger">Failed to load projects.</p></div>`;
+    if (!projects.length) {
+        grid.innerHTML = `<div class="col-12 text-center"><p class="text-muted">No projects yet.</p></div>`;
+        return;
     }
+
+    grid.innerHTML = projects.map(p => projectCard(p)).join('');
+    if (window.AOS) AOS.refresh();
 }
 
 function projectCard(p) {
     const tags = (p.tags || []).map(t => `<span class="project-tag">${t}</span>`).join('');
     const extLink = p.projectUrl
-        ? `<a href="${p.projectUrl}" target="_blank" class="portfolio-link" title="Live Demo"><i class="fas fa-external-link-alt"></i></a>`
-        : '';
+        ? `<a href="${p.projectUrl}" target="_blank" class="portfolio-link" title="Live Demo"><i class="fas fa-external-link-alt"></i></a>` : '';
     const ghLink = p.githubUrl
-        ? `<a href="${p.githubUrl}" target="_blank" class="portfolio-link" title="GitHub"><i class="fab fa-github"></i></a>`
-        : '';
+        ? `<a href="${p.githubUrl}" target="_blank" class="portfolio-link" title="GitHub"><i class="fab fa-github"></i></a>` : '';
 
     return `
         <div class="col-lg-4 col-md-6 mb-4" data-aos="fade-up">
@@ -55,7 +72,7 @@ function projectCard(p) {
                     </div>
                 </div>
                 <div class="portfolio-content">
-                    ${tags ? `<div class="project-tags mb-2">${tags}</div>` : ''}
+                    ${tags ? `<div class="project-tags">${tags}</div>` : ''}
                     <h4>${p.title}</h4>
                     <p>${p.description}</p>
                     <a href="project.html?id=${p.id}" class="btn-portfolio">
@@ -66,46 +83,32 @@ function projectCard(p) {
         </div>`;
 }
 
-// ─── Skills ─────────────────────────────────────────────────────────────────
-
-async function loadSkills() {
+// ── Skills ───────────────────────────────────────────────
+async function loadSkills(data) {
     const container = document.getElementById('skills-container');
     if (!container) return;
 
-    container.innerHTML = `
-        <div class="col-12 text-center py-5">
-            <div class="spinner-border" style="color:var(--accent-color)" role="status"></div>
-        </div>`;
+    const cats = (data.skills || []).sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    try {
-        const q = query(collection(db, 'skills'), orderBy('order', 'asc'));
-        const snap = await getDocs(q);
+    // update stat counter (total unique skill names)
+    const total = cats.reduce((acc, c) => acc + (c.skills || []).length, 0);
+    const statEl = document.getElementById('stat-skills');
+    if (statEl) statEl.textContent = total + '+';
 
-        if (snap.empty) {
-            container.innerHTML = `<div class="col-12 text-center"><p class="text-muted">No skills added yet.</p></div>`;
-            return;
-        }
-
-        container.innerHTML = '';
-        let delay = 100;
-        snap.forEach(doc => {
-            container.insertAdjacentHTML('beforeend', skillCategory({ id: doc.id, ...doc.data() }, delay));
-            delay += 100;
-        });
-
-        // Animate bars after render
-        setTimeout(() => {
-            document.querySelectorAll('.skill-progress').forEach(bar => {
-                bar.style.width = bar.dataset.level + '%';
-            });
-        }, 300);
-
-        if (window.AOS) AOS.refresh();
-
-    } catch (err) {
-        console.error('loadSkills:', err);
-        container.innerHTML = `<div class="col-12 text-center"><p class="text-danger">Failed to load skills.</p></div>`;
+    if (!cats.length) {
+        container.innerHTML = `<div class="col-12 text-center"><p class="text-muted">No skills yet.</p></div>`;
+        return;
     }
+
+    container.innerHTML = cats.map((cat, i) => skillCategory(cat, (i + 1) * 100)).join('');
+
+    setTimeout(() => {
+        document.querySelectorAll('.skill-progress').forEach(bar => {
+            bar.style.width = bar.dataset.level + '%';
+        });
+    }, 400);
+
+    if (window.AOS) AOS.refresh();
 }
 
 function skillCategory(cat, delay) {
@@ -115,7 +118,7 @@ function skillCategory(cat, delay) {
             <div class="skill-item">
                 <span class="skill-name">${s.name}</span>
                 <div class="skill-bar">
-                    <div class="skill-progress" data-level="${s.level}" style="width:0%"></div>
+                    <div class="skill-progress" data-level="${s.level || 80}" style="width:0%"></div>
                 </div>
             </div>`).join('')
         : (cat.skills || []).map(s => `<span class="skill-tag">${s.name}</span>`).join('');
@@ -132,9 +135,40 @@ function skillCategory(cat, delay) {
         </div>`;
 }
 
-// ─── Init ────────────────────────────────────────────────────────────────────
+// ── Services ─────────────────────────────────────────────
+async function loadServices(data) {
+    const grid = document.getElementById('services-grid');
+    if (!grid) return;
 
-document.addEventListener('DOMContentLoaded', () => {
-    loadProjects();
-    loadSkills();
+    const services = data.services || [];
+    if (!services.length) {
+        grid.innerHTML = `<div class="col-12 text-center"><p class="text-muted">No services yet.</p></div>`;
+        return;
+    }
+
+    grid.innerHTML = services.map((s, i) => `
+        <div class="col-lg-4 col-md-6 mb-4" data-aos="zoom-in" data-aos-delay="${(i % 3 + 1) * 100}">
+            <div class="service-card">
+                <div class="service-icon"><i class="${s.icon || 'fas fa-star'}"></i></div>
+                <h4>${s.title}</h4>
+                <p>${s.description}</p>
+            </div>
+        </div>`).join('');
+
+    if (window.AOS) AOS.refresh();
+}
+
+// ── Init ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const data = await loadData();
+        await Promise.all([
+            loadSiteInfo(data),
+            loadProjects(data),
+            loadSkills(data),
+            loadServices(data)
+        ]);
+    } catch (err) {
+        console.error('data.js error:', err);
+    }
 });
