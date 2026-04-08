@@ -20,7 +20,7 @@ body { font-family:var(--font); background:var(--bg); color:var(--text); }
 
 /* ══ Logo images ═════════════════════════════════════════ */
 .login-logo-img   { max-width:180px; height:auto; margin-bottom:16px; }
-.sidebar-logo-img { max-width:140px; height:auto; object-fit:contain; filter:brightness(0) invert(1); }
+.sidebar-logo-img { max-width:150px; height:auto; object-fit:contain; background:#fff; border-radius:6px; padding:6px 10px; }
 
 /* ══ LOGIN ══════════════════════════════════════════════ */
 .login-body {
@@ -58,8 +58,8 @@ body { font-family:var(--font); background:var(--bg); color:var(--text); }
 .sidebar.collapsed { width:0; }
 
 .sidebar-header {
-    display:flex; flex-direction:column;
-    padding:20px 16px;
+    display:flex; flex-direction:column; align-items:flex-start; gap:8px;
+    padding:16px;
     border-bottom:1px solid rgba(255,255,255,.1);
     white-space:nowrap;
 }
