@@ -23,6 +23,7 @@
             <a href="#" class="nav-item active" data-tab="projects"><i class="fas fa-folder-open"></i> Projects</a>
             <a href="#" class="nav-item" data-tab="skills"><i class="fas fa-code"></i> Skills</a>
             <a href="#" class="nav-item" data-tab="services"><i class="fas fa-cogs"></i> Services</a>
+            <a href="#" class="nav-item" data-tab="industries"><i class="fas fa-industry"></i> Industries</a>
             <a href="#" class="nav-item" data-tab="about"><i class="fas fa-users"></i> About Team</a>
         </nav>
         <div class="sidebar-footer">
@@ -92,7 +93,9 @@
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Industry</label>
-                            <input type="text" class="form-control" id="p-industry" placeholder="e.g. Healthcare, Finance, Retail">
+                            <select class="form-select" id="p-industry" aria-label="Industry">
+                                <option value="">— Not specified —</option>
+                            </select>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Deployment Type</label>
@@ -297,6 +300,27 @@
                     <div id="about-form-success" class="alert alert-success d-none py-2"></div>
                 </form>
             </div>
+        <!-- ═══ INDUSTRIES TAB ═══ -->
+        <div id="tab-industries" class="tab-content-panel d-none">
+            <div class="panel-header">
+                <h4>Manage Industries</h4>
+                <button type="button" class="btn btn-primary" id="btn-save-industries">
+                    <i class="fas fa-save me-1"></i> Save Changes
+                </button>
+            </div>
+            <div class="form-panel">
+                <p class="text-muted mb-3">
+                    These industries appear as filter options on the Projects section.
+                    Add or remove as needed.
+                </p>
+                <div id="industries-list"></div>
+                <button type="button" class="btn btn-outline-primary mt-3" id="btn-add-industry">
+                    <i class="fas fa-plus me-1"></i> Add Industry
+                </button>
+                <div id="industries-success" class="alert alert-success d-none py-2 mt-3"></div>
+            </div>
+        </div>
+
         </div>
 
     </main>

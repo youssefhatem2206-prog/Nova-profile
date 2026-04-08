@@ -162,6 +162,15 @@ img { max-width:100%; height:auto; }
 .filter-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
 .filter-btn.active { background: var(--primary-color); border-color: var(--primary-color); color: #fff; }
 .filter-btn.accent.active { background: var(--accent-color); border-color: var(--accent-color); }
+.filter-separator {
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--gray);
+    padding: 7px 4px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    align-self: center;
+}
 
 /* ── Portfolio ───────────────────────── */
 .portfolio-card { background:var(--white); border-radius:12px; overflow:hidden; box-shadow:var(--box-shadow); transition:var(--transition); height:100%; display:flex; flex-direction:column; }

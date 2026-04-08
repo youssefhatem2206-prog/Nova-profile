@@ -77,25 +77,34 @@ function projectCard(p) {
         </div>`;
 }
 
-function buildFilters(projects) {
+function buildFilters(projects, allIndustries) {
     const filtersEl = document.getElementById('portfolio-filters');
     if (!filtersEl) return;
 
-    // collect unique industries and deploy types
-    const industries = [...new Set(projects.map(p => p.industry).filter(Boolean))];
-    const deploys    = [...new Set(projects.map(p => p.deploymentType).filter(Boolean))];
+    // industries: use master list from data.json, only show ones that have projects
+    const usedIndustries = new Set(projects.map(p => p.industry).filter(Boolean));
+    const industries = (allIndustries || []).filter(ind => usedIndustries.has(ind));
+
+    // deploy types used in projects
+    const deploys = [...new Set(projects.map(p => p.deploymentType).filter(Boolean))];
 
     if (!industries.length && !deploys.length) return;
 
     // build buttons
     let html = `<button type="button" class="filter-btn active" data-filter="all">All</button>`;
-    industries.forEach(ind => {
-        html += `<button type="button" class="filter-btn" data-filter="industry:${ind}">${ind}</button>`;
-    });
-    deploys.forEach(dep => {
-        const label = DEPLOY_LABELS[dep] || dep;
-        html += `<button type="button" class="filter-btn" data-filter="deploy:${dep}">${label}</button>`;
-    });
+    if (industries.length) {
+        html += `<span class="filter-separator">Industry:</span>`;
+        industries.forEach(ind => {
+            html += `<button type="button" class="filter-btn" data-filter="industry:${ind}">${ind}</button>`;
+        });
+    }
+    if (deploys.length) {
+        html += `<span class="filter-separator">Deployment:</span>`;
+        deploys.forEach(dep => {
+            const label = DEPLOY_LABELS[dep] || dep;
+            html += `<button type="button" class="filter-btn" data-filter="deploy:${dep}">${label}</button>`;
+        });
+    }
 
     filtersEl.innerHTML = html;
     filtersEl.classList.remove('d-none');
@@ -138,7 +147,7 @@ function loadProjects(data) {
     }
 
     grid.innerHTML = projects.map(p => projectCard(p)).join('');
-    buildFilters(projects);
+    buildFilters(projects, data._industries);
     if (window.AOS) AOS.refresh();
 }
 
@@ -219,6 +228,8 @@ function loadServices(data) {
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const data = await loadData();
+        // attach industries to data object for use in buildFilters
+        data._industries = data.industries || [];
         loadSiteInfo(data);
         loadProjects(data);
         loadSkills(data);

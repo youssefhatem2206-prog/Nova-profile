@@ -9,6 +9,20 @@
     "linkedin": "https://www.linkedin.com/company/noventiq",
     "github": "https://github.com/noventiq-egypt"
   },
+  "industries": [
+    "Banking, Financial Services & Insurance (BFSI)",
+    "Healthcare & Life Sciences",
+    "Retail & E-Commerce",
+    "Manufacturing & Industrial (Industry 4.0)",
+    "Telecom & Media",
+    "Government & Public Sector",
+    "Education & EdTech",
+    "Energy, Utilities & Oil & Gas",
+    "IT & ITeS / Technology Providers",
+    "Logistics & Transportation",
+    "Agriculture & AgriTech",
+    "Pharmaceuticals & Hospitality"
+  ],
   "services": [
     {
       "id": "s1",

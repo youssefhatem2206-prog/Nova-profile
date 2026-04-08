@@ -158,6 +158,11 @@ body { font-family:var(--font); background:var(--bg); color:var(--text); }
 .skill-input-row .form-control { flex:1; }
 .skill-level-wrap { display:flex; align-items:center; gap:6px; }
 
+/* ══ INDUSTRIES FORM ════════════════════════════════════ */
+.industry-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.industry-row .form-control { flex:1; }
+.industry-row .btn { flex-shrink:0; }
+
 /* ══ BUTTONS ════════════════════════════════════════════ */
 .btn-primary { background:var(--accent); border-color:var(--accent); font-weight:500; }
 .btn-primary:hover { background:#c0142e; border-color:#c0142e; color:#fff; }

@@ -145,6 +145,7 @@ function openProjectForm(p) {
     document.getElementById('p-description').value              = p?.description || '';
     document.getElementById('p-long-description').value         = p?.longDescription || '';
     document.getElementById('p-tags').value                     = (p?.tags||[]).join(', ');
+    populateIndustryDropdown();
     document.getElementById('p-industry').value                 = p?.industry || '';
     document.getElementById('p-deploy').value                   = p?.deploymentType || '';
     document.getElementById('p-url').value                      = p?.projectUrl || '';
@@ -443,11 +444,79 @@ document.getElementById('btn-save-about').addEventListener('click', () => {
     showMsg('about-form-success', 'About info saved! Download data.json to apply changes.', 'success');
 });
 
+// ══════════════════════════════════════════════════════════
+// INDUSTRIES
+// ══════════════════════════════════════════════════════════
+
+function renderIndustries() {
+    const list = document.getElementById('industries-list');
+    if (!list) return;
+    const industries = DATA.industries || [];
+    list.innerHTML = industries.map((ind, i) => industryRow(ind, i)).join('');
+    bindIndustryEvents();
+}
+
+function industryRow(name, index) {
+    return `
+        <div class="industry-row" data-index="${index}">
+            <input type="text" class="form-control industry-input"
+                   value="${name}" aria-label="Industry name" placeholder="Industry name">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-industry" title="Remove">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>`;
+}
+
+function bindIndustryEvents() {
+    document.querySelectorAll('.remove-industry').forEach(btn => {
+        btn.addEventListener('click', () => {
+            btn.closest('.industry-row').remove();
+        });
+    });
+}
+
+document.getElementById('btn-add-industry').addEventListener('click', () => {
+    const list = document.getElementById('industries-list');
+    const div  = document.createElement('div');
+    const idx  = list.children.length;
+    div.innerHTML = industryRow('', idx);
+    list.appendChild(div.firstElementChild);
+    bindIndustryEvents();
+    list.lastElementChild.querySelector('.industry-input').focus();
+});
+
+document.getElementById('btn-save-industries').addEventListener('click', () => {
+    const inputs = document.querySelectorAll('.industry-input');
+    DATA.industries = [...inputs]
+        .map(inp => inp.value.trim())
+        .filter(Boolean);
+    markDirty();
+    // Refresh project industry dropdown
+    populateIndustryDropdown();
+    showMsg('industries-success', 'Industries saved! Download data.json to apply.', 'success');
+});
+
+function populateIndustryDropdown() {
+    const sel = document.getElementById('p-industry');
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = '<option value="">— Not specified —</option>';
+    (DATA.industries || []).forEach(ind => {
+        const opt = document.createElement('option');
+        opt.value = ind;
+        opt.textContent = ind;
+        if (ind === current) opt.selected = true;
+        sel.appendChild(opt);
+    });
+}
+
 // ── Init ──────────────────────────────────────────────────
 (async () => {
     await loadData();
     renderProjects();
     renderSkills();
     renderServices();
+    renderIndustries();
+    populateIndustryDropdown();
     loadAboutForm();
 })();
