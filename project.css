@@ -1,0 +1,10 @@
+/* Styles specific to project.html only */
+
+/* Navbar always dark on project page */
+.navbar-custom {
+    background: rgba(44, 62, 80, 0.98) !important;
+    backdrop-filter: blur(10px);
+}
+
+/* Remove bottom padding from body (no social bar overlap issue here) */
+body { padding-bottom: 80px; }
