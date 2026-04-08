@@ -1,24 +1,34 @@
-// data.js — loads everything from data.json (no Firebase)
+// data.js — reads all data from Firebase Firestore (ES module)
+import { db } from './firebase-config.js';
+import {
+    collection, getDocs, doc, getDoc, query, orderBy
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-async function loadData() {
-    const res = await fetch('data.json?v=' + Date.now());
-    if (!res.ok) throw new Error('Failed to load data.json');
-    return res.json();
+// ── Deploy badge helper ───────────────────────────────────
+const DEPLOY_LABELS = { cloud: 'Cloud', onprem: 'On-Premises', hybrid: 'Hybrid' };
+
+function deployBadge(type) {
+    if (!type) return '';
+    const label = DEPLOY_LABELS[type] || type;
+    const icon  = type === 'cloud' ? 'fa-cloud' : type === 'onprem' ? 'fa-server' : 'fa-network-wired';
+    return `<span class="badge-deploy ${type}"><i class="fas ${icon} me-1"></i>${label}</span>`;
 }
 
-// ── Site info ────────────────────────────────────────────
-function loadSiteInfo(data) {
-    const s = data.site;
-    if (!s) return;
+// ── Site Info ─────────────────────────────────────────────
+async function loadSiteInfo() {
+    const snap = await getDoc(doc(db, 'config', 'site'));
+    if (!snap.exists()) return;
+    const s = snap.data();
+
     const set     = (id, val) => { const el = document.getElementById(id); if (el && val) el.textContent = val; };
     const setHref = (id, val) => { const el = document.getElementById(id); if (el && val) el.href = val; };
 
-    set('hero-tagline',   s.tagline);
+    set('hero-tagline',    s.tagline);
     set('about-team-name', `${s.teamName} · ${s.company}`);
-    set('about-location', s.location);
-    set('about-email',    s.email);
-    set('contact-location', s.location);
-    set('contact-email',  s.email);
+    set('about-location',  s.location);
+    set('about-email',     s.email);
+    set('contact-location',s.location);
+    set('contact-email',   s.email);
 
     const aboutDesc = document.getElementById('about-description');
     if (aboutDesc && s.about) {
@@ -33,23 +43,12 @@ function loadSiteInfo(data) {
     setHref('social-linkedin', s.linkedin);
 }
 
-// ── Projects + Filters ───────────────────────────────────
-const DEPLOY_LABELS = { cloud: 'Cloud', onprem: 'On-Premises', hybrid: 'Hybrid' };
-
-function deployBadge(type) {
-    if (!type) return '';
-    const label = DEPLOY_LABELS[type] || type;
-    const icon  = type === 'cloud' ? 'fa-cloud' : type === 'onprem' ? 'fa-server' : 'fa-network-wired';
-    return `<span class="badge-deploy ${type}"><i class="fas ${icon} me-1"></i>${label}</span>`;
-}
-
+// ── Projects ──────────────────────────────────────────────
 function projectCard(p) {
-    const tags       = (p.tags || []).map(t => `<span class="project-tag">${t}</span>`).join('');
-    const extLink    = p.projectUrl
+    const tags           = (p.tags || []).map(t => `<span class="project-tag">${t}</span>`).join('');
+    const extLink        = p.projectUrl
         ? `<a href="${p.projectUrl}" target="_blank" class="portfolio-link" title="Live Demo"><i class="fas fa-external-link-alt"></i></a>` : '';
-
-    const industryBadge = p.industry
-        ? `<span class="badge-industry">${p.industry}</span>` : '';
+    const industryBadge  = p.industry ? `<span class="badge-industry">${p.industry}</span>` : '';
     const deployBadgeHtml = deployBadge(p.deploymentType);
 
     return `
@@ -77,66 +76,153 @@ function projectCard(p) {
         </div>`;
 }
 
-function buildFilters(projects, allIndustries) {
+function buildFilters(projects, industries) {
     const filtersEl = document.getElementById('portfolio-filters');
     if (!filtersEl) return;
 
-    // industries: use master list from data.json, only show ones that have projects
     const usedIndustries = new Set(projects.map(p => p.industry).filter(Boolean));
-    const industries = (allIndustries || []).filter(ind => usedIndustries.has(ind));
-
-    // deploy types used in projects
+    const filteredIndustries = (industries || []).filter(ind => usedIndustries.has(ind));
     const deploys = [...new Set(projects.map(p => p.deploymentType).filter(Boolean))];
 
-    if (!industries.length && !deploys.length) return;
+    if (!filteredIndustries.length && !deploys.length) return;
 
-    // build buttons
-    let html = `<button type="button" class="filter-btn active" data-filter="all">All</button>`;
-    if (industries.length) {
-        html += `<span class="filter-separator">Industry:</span>`;
-        industries.forEach(ind => {
-            html += `<button type="button" class="filter-btn" data-filter="industry:${ind}">${ind}</button>`;
+    const DEPLOY_ICONS = { cloud: 'fa-cloud', onprem: 'fa-server', hybrid: 'fa-network-wired' };
+
+    // ── Build bar HTML ────────────────────────────────────
+    let html = `<div class="filter-bar">
+        <button type="button" class="filter-pill active" data-filter="all">All</button>`;
+
+    if (filteredIndustries.length) {
+        html += `
+        <div class="filter-dropdown-wrap">
+            <button type="button" class="filter-pill" data-dropdown="industry">
+                <i class="fas fa-industry item-icon"></i> Industry
+                <i class="fas fa-chevron-down filter-chevron"></i>
+            </button>
+            <div class="filter-dropdown-menu" id="dd-industry">
+                <button type="button" class="filter-dropdown-item active" data-filter="all-industry">
+                    <i class="fas fa-th item-icon"></i> All Industries
+                </button>`;
+        filteredIndustries.forEach(ind => {
+            html += `<button type="button" class="filter-dropdown-item" data-filter="industry:${ind}">
+                <i class="fas fa-building item-icon"></i>${ind}
+            </button>`;
         });
+        html += `</div></div>`;
     }
+
     if (deploys.length) {
-        html += `<span class="filter-separator">Deployment:</span>`;
+        html += `
+        <div class="filter-dropdown-wrap">
+            <button type="button" class="filter-pill" data-dropdown="deploy">
+                <i class="fas fa-server item-icon"></i> Deployment
+                <i class="fas fa-chevron-down filter-chevron"></i>
+            </button>
+            <div class="filter-dropdown-menu" id="dd-deploy">
+                <button type="button" class="filter-dropdown-item active" data-filter="all-deploy">
+                    <i class="fas fa-th item-icon"></i> All Types
+                </button>`;
         deploys.forEach(dep => {
+            const icon  = DEPLOY_ICONS[dep] || 'fa-globe';
             const label = DEPLOY_LABELS[dep] || dep;
-            html += `<button type="button" class="filter-btn" data-filter="deploy:${dep}">${label}</button>`;
+            html += `<button type="button" class="filter-dropdown-item" data-filter="deploy:${dep}">
+                <i class="fas ${icon} item-icon"></i>${label}
+            </button>`;
         });
+        html += `</div></div>`;
     }
 
+    html += `</div>`;
     filtersEl.innerHTML = html;
     filtersEl.classList.remove('d-none');
 
-    // filter logic
-    filtersEl.addEventListener('click', e => {
-        const btn = e.target.closest('.filter-btn');
-        if (!btn) return;
+    // ── Filter logic ──────────────────────────────────────
+    let activeIndustry = 'all';
+    let activeDeploy   = 'all';
 
-        filtersEl.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        const filter = btn.dataset.filter;
+    function applyFilters() {
         document.querySelectorAll('.portfolio-item').forEach(item => {
-            if (filter === 'all') {
-                item.classList.remove('d-none');
-            } else if (filter.startsWith('industry:')) {
-                const val = filter.split(':')[1];
-                item.classList.toggle('d-none', item.dataset.industry !== val);
-            } else if (filter.startsWith('deploy:')) {
-                const val = filter.split(':')[1];
-                item.classList.toggle('d-none', item.dataset.deploy !== val);
-            }
+            const matchIndustry = activeIndustry === 'all' || item.dataset.industry === activeIndustry;
+            const matchDeploy   = activeDeploy   === 'all' || item.dataset.deploy    === activeDeploy;
+            item.classList.toggle('d-none', !(matchIndustry && matchDeploy));
+        });
+    }
+
+    function closeAllDropdowns() {
+        filtersEl.querySelectorAll('.filter-dropdown-menu').forEach(m => m.classList.remove('open'));
+        filtersEl.querySelectorAll('[data-dropdown]').forEach(t => t.classList.remove('open'));
+    }
+
+    // Dropdown toggle triggers
+    filtersEl.querySelectorAll('[data-dropdown]').forEach(trigger => {
+        trigger.addEventListener('click', e => {
+            e.stopPropagation();
+            const menu   = document.getElementById('dd-' + trigger.dataset.dropdown);
+            const isOpen = menu.classList.contains('open');
+            closeAllDropdowns();
+            if (!isOpen) { menu.classList.add('open'); trigger.classList.add('open'); }
+        });
+    });
+
+    document.addEventListener('click', closeAllDropdowns);
+
+    // "All" pill
+    filtersEl.querySelector('[data-filter="all"]').addEventListener('click', () => {
+        activeIndustry = 'all';
+        activeDeploy   = 'all';
+        // Reset pill states
+        filtersEl.querySelectorAll('[data-dropdown]').forEach(t => t.classList.remove('active', 'has-selection'));
+        filtersEl.querySelector('[data-filter="all"]').classList.add('active');
+        // Reset dropdown item states
+        filtersEl.querySelectorAll('.filter-dropdown-item').forEach(i => {
+            i.classList.toggle('active', i.dataset.filter === 'all-industry' || i.dataset.filter === 'all-deploy');
+        });
+        applyFilters();
+    });
+
+    // Dropdown items
+    filtersEl.querySelectorAll('.filter-dropdown-item').forEach(item => {
+        item.addEventListener('click', e => {
+            e.stopPropagation();
+            const filter = item.dataset.filter;
+            const menu   = item.closest('.filter-dropdown-menu');
+            const type   = menu.id === 'dd-industry' ? 'industry' : 'deploy';
+
+            // Update active item within this dropdown
+            menu.querySelectorAll('.filter-dropdown-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+
+            // Update state
+            if (type === 'industry') activeIndustry = filter.startsWith('industry:') ? filter.split(':')[1] : 'all';
+            else                     activeDeploy   = filter.startsWith('deploy:')   ? filter.split(':')[1] : 'all';
+
+            // Update trigger pill
+            const trigger = filtersEl.querySelector(`[data-dropdown="${type}"]`);
+            const hasSelection = (type === 'industry' ? activeIndustry : activeDeploy) !== 'all';
+            trigger.classList.toggle('has-selection', hasSelection);
+            trigger.classList.remove('active');
+
+            // Remove "All" pill active if any filter is set
+            const anyActive = activeIndustry !== 'all' || activeDeploy !== 'all';
+            filtersEl.querySelector('[data-filter="all"]').classList.toggle('active', !anyActive);
+
+            closeAllDropdowns();
+            applyFilters();
         });
     });
 }
 
-function loadProjects(data) {
+async function loadProjects() {
     const grid = document.getElementById('portfolio-grid');
     if (!grid) return;
 
-    const projects = (data.projects || []).sort((a, b) => (a.order || 0) - (b.order || 0));
+    const [projectsSnap, industriesSnap] = await Promise.all([
+        getDocs(query(collection(db, 'projects'), orderBy('order', 'asc'))),
+        getDoc(doc(db, 'config', 'industries'))
+    ]);
+
+    const projects   = projectsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const industries = industriesSnap.exists() ? (industriesSnap.data().list || []) : [];
 
     const statEl = document.getElementById('stat-projects');
     if (statEl) statEl.textContent = projects.length;
@@ -147,39 +233,14 @@ function loadProjects(data) {
     }
 
     grid.innerHTML = projects.map(p => projectCard(p)).join('');
-    buildFilters(projects, data._industries);
+    buildFilters(projects, industries);
     if (window.AOS) AOS.refresh();
 }
 
-// ── Skills ───────────────────────────────────────────────
-function loadSkills(data) {
-    const container = document.getElementById('skills-container');
-    if (!container) return;
-
-    const cats  = (data.skills || []).sort((a, b) => (a.order || 0) - (b.order || 0));
-    const total = cats.reduce((acc, c) => acc + (c.skills || []).length, 0);
-    const statEl = document.getElementById('stat-skills');
-    if (statEl) statEl.textContent = total + '+';
-
-    if (!cats.length) {
-        container.innerHTML = `<div class="col-12 text-center"><p class="text-muted">No skills yet.</p></div>`;
-        return;
-    }
-
-    container.innerHTML = cats.map((cat, i) => skillCategory(cat, (i + 1) * 100)).join('');
-
-    setTimeout(() => {
-        document.querySelectorAll('.skill-progress').forEach(bar => {
-            bar.style.width = bar.dataset.level + '%';
-        });
-    }, 400);
-
-    if (window.AOS) AOS.refresh();
-}
-
+// ── Skills ────────────────────────────────────────────────
 function skillCategory(cat, delay) {
-    const isBar = cat.type === 'bar';
-    const inner = isBar
+    const isBar  = cat.type === 'bar';
+    const inner  = isBar
         ? (cat.skills || []).map(s => `
             <div class="skill-item">
                 <span class="skill-name">${s.name}</span>
@@ -201,12 +262,41 @@ function skillCategory(cat, delay) {
         </div>`;
 }
 
-// ── Services ─────────────────────────────────────────────
-function loadServices(data) {
+async function loadSkills() {
+    const container = document.getElementById('skills-container');
+    if (!container) return;
+
+    const snap = await getDocs(query(collection(db, 'skills'), orderBy('order', 'asc')));
+    const cats  = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const total = cats.reduce((acc, c) => acc + (c.skills || []).length, 0);
+
+    const statEl = document.getElementById('stat-skills');
+    if (statEl) statEl.textContent = total + '+';
+
+    if (!cats.length) {
+        container.innerHTML = `<div class="col-12 text-center"><p class="text-muted">No skills yet.</p></div>`;
+        return;
+    }
+
+    container.innerHTML = cats.map((cat, i) => skillCategory(cat, (i + 1) * 100)).join('');
+
+    setTimeout(() => {
+        document.querySelectorAll('.skill-progress').forEach(bar => {
+            bar.style.width = bar.dataset.level + '%';
+        });
+    }, 400);
+
+    if (window.AOS) AOS.refresh();
+}
+
+// ── Services ──────────────────────────────────────────────
+async function loadServices() {
     const grid = document.getElementById('services-grid');
     if (!grid) return;
 
-    const services = data.services || [];
+    const snap     = await getDocs(collection(db, 'services'));
+    const services = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
     if (!services.length) {
         grid.innerHTML = `<div class="col-12 text-center"><p class="text-muted">No services yet.</p></div>`;
         return;
@@ -224,17 +314,12 @@ function loadServices(data) {
     if (window.AOS) AOS.refresh();
 }
 
-// ── Init ─────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        const data = await loadData();
-        // attach industries to data object for use in buildFilters
-        data._industries = data.industries || [];
-        loadSiteInfo(data);
-        loadProjects(data);
-        loadSkills(data);
-        loadServices(data);
-    } catch (err) {
-        console.error('data.js error:', err);
-    }
+// ── Init ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    Promise.all([
+        loadSiteInfo(),
+        loadProjects(),
+        loadSkills(),
+        loadServices()
+    ]).catch(err => console.error('data.js error:', err));
 });

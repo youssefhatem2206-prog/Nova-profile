@@ -1,4 +1,6 @@
-// project.js — loads project from data.json (no Firebase)
+// project.js — loads project from Firebase Firestore
+import { db } from '../firebase-config.js';
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 function getYoutubeEmbedUrl(url) {
     if (!url) return null;
@@ -33,7 +35,7 @@ function renderProject(p) {
     // Tags
     const tagsHtml = (p.tags || []).map(t => `<span class="project-tag">${t}</span>`).join('');
     document.getElementById('project-tags').innerHTML = tagsHtml;
-    document.getElementById('meta-tags').textContent = (p.tags || []).join(', ') || '—';
+    document.getElementById('meta-tags').textContent  = (p.tags || []).join(', ') || '—';
 
     document.getElementById('project-title').textContent = p.title;
 
@@ -43,16 +45,10 @@ function renderProject(p) {
     }
 
     if (p.projectUrl) {
-        document.getElementById('btn-live').href     = p.projectUrl;
+        document.getElementById('btn-live').href      = p.projectUrl;
         document.getElementById('meta-btn-live').href = p.projectUrl;
-        document.getElementById('btn-live').classList.remove('d-none');
-        document.getElementById('meta-btn-live').classList.remove('d-none');
-    }
-    if (p.githubUrl) {
-        document.getElementById('btn-github').href     = p.githubUrl;
-        document.getElementById('meta-btn-github').href = p.githubUrl;
-        document.getElementById('btn-github').classList.remove('d-none');
-        document.getElementById('meta-btn-github').classList.remove('d-none');
+        show('btn-live');
+        show('meta-btn-live');
     }
 
     const descEl = document.getElementById('project-description');
@@ -65,19 +61,15 @@ function renderProject(p) {
 
 async function init() {
     const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
+    const id     = params.get('id');
 
     if (!id) { hide('loading-state'); show('error-state'); return; }
 
     try {
-        const res  = await fetch('data.json?v=' + Date.now());
-        const data = await res.json();
-        const project = (data.projects || []).find(p => p.id === id);
-
+        const snap = await getDoc(doc(db, 'projects', id));
         hide('loading-state');
-        if (!project) { show('error-state'); return; }
-
-        renderProject(project);
+        if (!snap.exists()) { show('error-state'); return; }
+        renderProject({ id: snap.id, ...snap.data() });
         show('project-content');
     } catch (err) {
         console.error(err);

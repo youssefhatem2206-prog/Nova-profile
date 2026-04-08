@@ -170,10 +170,8 @@
                 <div class="divider"></div>
                 <p class="section-subtitle">A selection of our Data & AI solutions</p>
             </div>
-            <!-- Filter Buttons -->
-            <div class="portfolio-filters d-none" id="portfolio-filters">
-                <button type="button" class="filter-btn active" data-filter="all">All</button>
-            </div>
+            <!-- Filter Bar -->
+            <div class="portfolio-filters d-none" id="portfolio-filters"></div>
             <div class="row" id="portfolio-grid">
                 <div class="col-12 text-center py-5">
                     <div class="spinner-border spinner-accent" role="status"></div>
@@ -245,7 +243,7 @@
     </div>
 
     <script src="script/script.js"></script>
-    <script src="data.js"></script>
+    <script type="module" src="data.js"></script>
     <script>
         AOS.init({ duration: 1000, once: true, offset: 100 });
     </script>

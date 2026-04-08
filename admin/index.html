@@ -22,11 +22,20 @@
             </div>
 
             <form id="login-form" novalidate>
+                <div class="mb-3">
+                    <label class="form-label" for="admin-email">Email</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                        <input type="email" id="admin-email" class="form-control"
+                               placeholder="admin@noventiq.com" required autocomplete="username">
+                    </div>
+                </div>
                 <div class="mb-4">
                     <label class="form-label" for="admin-password">Password</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                        <input type="password" id="admin-password" class="form-control" placeholder="Enter admin password" required autocomplete="current-password">
+                        <input type="password" id="admin-password" class="form-control"
+                               placeholder="Enter password" required autocomplete="current-password">
                         <button type="button" class="input-group-text btn-toggle-pw" id="toggle-pw" title="Toggle password visibility">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -35,8 +44,9 @@
 
                 <div id="login-error" class="alert alert-danger d-none py-2" role="alert"></div>
 
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                <button type="submit" class="btn btn-primary w-100" id="login-btn">
+                    <span id="login-btn-text"><i class="fas fa-sign-in-alt me-2"></i>Sign In</span>
+                    <span class="spinner-border spinner-border-sm ms-2 d-none" id="login-spinner"></span>
                 </button>
             </form>
 
@@ -48,13 +58,16 @@
         </div>
     </div>
 
-    <script>
-        const ADMIN_PASS = 'noventiq2025'; // change this!
+    <script type="module">
+        import { auth } from '../firebase-config.js';
+        import {
+            signInWithEmailAndPassword, onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
-        // If already logged in
-        if (sessionStorage.getItem('admin_auth') === '1') {
-            window.location.href = 'dashboard.html';
-        }
+        // Already logged in → go to dashboard
+        onAuthStateChanged(auth, user => {
+            if (user) window.location.href = 'dashboard.html';
+        });
 
         // Toggle password visibility
         document.getElementById('toggle-pw').addEventListener('click', () => {
@@ -69,18 +82,33 @@
             }
         });
 
-        // Login
-        document.getElementById('login-form').addEventListener('submit', e => {
+        // Login with Firebase Auth
+        document.getElementById('login-form').addEventListener('submit', async e => {
             e.preventDefault();
-            const pw      = document.getElementById('admin-password').value;
-            const errorEl = document.getElementById('login-error');
-            if (pw === ADMIN_PASS) {
-                sessionStorage.setItem('admin_auth', '1');
+            const email    = document.getElementById('admin-email').value.trim();
+            const password = document.getElementById('admin-password').value;
+            const errorEl  = document.getElementById('login-error');
+            const spinner  = document.getElementById('login-spinner');
+            const btn      = document.getElementById('login-btn');
+
+            errorEl.classList.add('d-none');
+            btn.disabled = true;
+            spinner.classList.remove('d-none');
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
                 window.location.href = 'dashboard.html';
-            } else {
-                errorEl.textContent = 'Incorrect password. Please try again.';
+            } catch (err) {
+                const msg = err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password'
+                    ? 'Incorrect email or password.'
+                    : err.code === 'auth/too-many-requests'
+                    ? 'Too many attempts. Please try again later.'
+                    : 'Login failed. Check your connection and try again.';
+                errorEl.textContent = msg;
                 errorEl.classList.remove('d-none');
-                document.getElementById('admin-password').value = '';
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('d-none');
             }
         });
     </script>

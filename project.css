@@ -1,9 +1,28 @@
 /* Styles specific to project.html only */
 
-/* Navbar always dark on project page */
+/* Navbar: white background matching main page */
 .navbar-custom {
-    background: rgba(44, 62, 80, 0.98) !important;
-    backdrop-filter: blur(10px);
+    background: #ffffff !important;
+    backdrop-filter: none;
+}
+
+/* Logo: rounded corners */
+.navbar-custom .navbar-logo {
+    border-radius: 10px;
+}
+
+/* Back to Portfolio button */
+.btn-back-portfolio {
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+    border-radius: 25px;
+    padding: 6px 18px;
+    font-weight: 500;
+    transition: background .2s, color .2s;
+}
+.btn-back-portfolio:hover {
+    background: var(--primary-color);
+    color: #fff;
 }
 
 /* Remove bottom padding from body (no social bar overlap issue here) */

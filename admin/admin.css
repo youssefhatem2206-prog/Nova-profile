@@ -169,6 +169,13 @@ body { font-family:var(--font); background:var(--bg); color:var(--text); }
 .btn-outline-primary { color:var(--secondary); border-color:var(--secondary); }
 .btn-outline-primary:hover { background:var(--secondary); color:#fff; }
 
+/* ══ FILE UPLOAD ════════════════════════════════════════ */
+.upload-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.upload-row .flex-grow-1 { min-width:200px; }
+.upload-or { color:var(--text-muted); font-size:.85rem; flex-shrink:0; }
+.upload-progress { margin-top:8px; }
+.upload-progress .progress { height:6px; border-radius:4px; }
+
 /* ══ RESPONSIVE ═════════════════════════════════════════ */
 @media (max-width:768px) {
     .sidebar { width:0; }
