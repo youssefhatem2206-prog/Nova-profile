@@ -162,7 +162,7 @@ function renderProjectRow(p) {
 document.getElementById('btn-add-project').addEventListener('click', () => openProjectForm(null));
 document.getElementById('project-cancel-btn').addEventListener('click', closeProjectForm);
 
-async function openProjectForm(p) {
+function openProjectForm(p) {
     editingProjectId = p?.id || null;
     document.getElementById('project-form-title').textContent  = p ? 'Edit Project' : 'Add New Project';
     document.getElementById('project-submit-text').textContent = p ? 'Update Project' : 'Save Project';
@@ -180,7 +180,7 @@ async function openProjectForm(p) {
     document.getElementById('p-image-file').value         = '';
     document.getElementById('p-video-file').value         = '';
 
-    await populateIndustryDropdown();
+    populateIndustryDropdown();
     document.getElementById('p-industry').value = p?.industry || '';
 
     if (p?.image) {
@@ -638,8 +638,9 @@ document.getElementById('btn-save-industries').addEventListener('click', async (
         const inputs     = document.querySelectorAll('#industries-list .industry-input');
         const industries = [...inputs].map(i => i.value.trim()).filter(Boolean);
         await setDoc(doc(db, 'config', 'industries'), { list: industries, updatedAt: serverTimestamp() });
-        // Refresh project dropdown
-        await populateIndustryDropdown();
+        // Update cache and refresh dropdown
+        cachedIndustries = industries;
+        populateIndustryDropdown();
         showMsg('industries-success', 'Industries saved successfully!', 'success');
     } catch (err) {
         console.error(err);
