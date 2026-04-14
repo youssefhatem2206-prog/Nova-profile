@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Admin Dashboard – Noventiq Data & AI</title>
     <meta charset="utf-8">
+    <title>Admin Dashboard – Noventiq</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/png" href="../images/Icon.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -34,7 +34,7 @@
     <!-- Main -->
     <main class="dashboard-main" id="dashboard-main">
         <div class="topbar">
-            <button class="sidebar-toggle" id="sidebar-toggle"><i class="fas fa-bars"></i></button>
+            <button type="button" class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar" aria-label="Toggle sidebar"><i class="fas fa-bars"></i></button>
             <h5 id="topbar-title" class="mb-0">Projects</h5>
             <div class="topbar-user ms-auto">
                 <i class="fas fa-user-circle me-1"></i>
@@ -46,7 +46,7 @@
         <div class="save-banner" id="save-banner">
             <i class="fas fa-exclamation-circle me-2"></i>
             You have unsaved changes.
-            <button class="btn btn-sm btn-light ms-3" id="download-btn">
+            <button type="button" class="btn btn-sm btn-light ms-3" id="download-btn">
                 <i class="fas fa-download me-1"></i> Download data.json
             </button>
             <small class="ms-2 text-white-50">Then commit & push to update the site</small>
@@ -56,7 +56,7 @@
         <div id="tab-projects" class="tab-content-panel active">
             <div class="panel-header">
                 <h4>Manage Projects</h4>
-                <button class="btn btn-primary" id="btn-add-project"><i class="fas fa-plus me-1"></i> Add Project</button>
+                <button type="button" class="btn btn-primary" id="btn-add-project"><i class="fas fa-plus me-1"></i> Add Project</button>
             </div>
             <div class="form-panel d-none" id="project-form-panel">
                 <h5 id="project-form-title">Add New Project</h5>
@@ -72,8 +72,8 @@
                             <input type="text" class="form-control" id="p-category" placeholder="e.g. AI / NLP">
                         </div>
                         <div class="col-md-3 mb-3">
-                            <label class="form-label">Display Order</label>
-                            <input type="number" class="form-control" id="p-order" value="1" min="1">
+                            <label class="form-label" for="p-order">Display Order</label>
+                            <input type="number" class="form-control" id="p-order" value="1" min="1" title="Display order" placeholder="1">
                         </div>
                     </div>
                     <div class="mb-3">
@@ -176,7 +176,7 @@
         <div id="tab-skills" class="tab-content-panel d-none">
             <div class="panel-header">
                 <h4>Manage Skills</h4>
-                <button class="btn btn-primary" id="btn-add-skill"><i class="fas fa-plus me-1"></i> Add Category</button>
+                <button type="button" class="btn btn-primary" id="btn-add-skill"><i class="fas fa-plus me-1"></i> Add Category</button>
             </div>
             <div class="form-panel d-none" id="skill-form-panel">
                 <h5 id="skill-form-title">Add Skill Category</h5>
@@ -192,15 +192,15 @@
                             <input type="text" class="form-control" id="s-icon" placeholder="fas fa-brain">
                         </div>
                         <div class="col-md-2 mb-3">
-                            <label class="form-label">Type</label>
-                            <select class="form-select" id="s-type">
+                            <label class="form-label" for="s-type">Type</label>
+                            <select class="form-select" id="s-type" title="Skill display type">
                                 <option value="bar">Bar (with %)</option>
                                 <option value="tag">Tag (badges)</option>
                             </select>
                         </div>
                         <div class="col-md-2 mb-3">
-                            <label class="form-label">Order</label>
-                            <input type="number" class="form-control" id="s-order" value="1" min="1">
+                            <label class="form-label" for="s-order">Order</label>
+                            <input type="number" class="form-control" id="s-order" value="1" min="1" title="Display order" placeholder="1">
                         </div>
                     </div>
                     <div class="mb-3">
@@ -223,7 +223,7 @@
                 <div id="skills-empty" class="empty-state d-none"><i class="fas fa-code fa-3x text-muted mb-3"></i><p>No skill categories yet.</p></div>
                 <div class="table-responsive d-none" id="skills-table-wrap">
                     <table class="admin-table">
-                        <thead><tr><th>Category</th><th>Icon</th><th>Type</th><th>Count</th><th style="width:60px">Order</th><th style="width:120px">Actions</th></tr></thead>
+                        <thead><tr><th>Category</th><th>Icon</th><th>Type</th><th>Count</th><th class="col-w-60">Order</th><th class="col-w-120">Actions</th></tr></thead>
                         <tbody id="skills-tbody"></tbody>
                     </table>
                 </div>
@@ -234,7 +234,7 @@
         <div id="tab-services" class="tab-content-panel d-none">
             <div class="panel-header">
                 <h4>Manage Services</h4>
-                <button class="btn btn-primary" id="btn-add-service"><i class="fas fa-plus me-1"></i> Add Service</button>
+                <button type="button" class="btn btn-primary" id="btn-add-service"><i class="fas fa-plus me-1"></i> Add Service</button>
             </div>
             <div class="form-panel d-none" id="service-form-panel">
                 <h5 id="service-form-title">Add Service</h5>
@@ -267,7 +267,7 @@
                 <div id="services-empty" class="empty-state d-none"><i class="fas fa-cogs fa-3x text-muted mb-3"></i><p>No services yet.</p></div>
                 <div class="table-responsive d-none" id="services-table-wrap">
                     <table class="admin-table">
-                        <thead><tr><th>Icon</th><th>Title</th><th>Description</th><th style="width:120px">Actions</th></tr></thead>
+                        <thead><tr><th>Icon</th><th>Title</th><th>Description</th><th class="col-w-120">Actions</th></tr></thead>
                         <tbody id="services-tbody"></tbody>
                     </table>
                 </div>

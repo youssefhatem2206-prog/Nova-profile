@@ -1,12 +1,12 @@
 {
   "site": {
-    "teamName": "Data & AI Team",
+    "teamName": "Service Delivery Team",
     "company": "Noventiq Egypt",
     "tagline": "Transforming Business Through Data & Artificial Intelligence",
-    "about": "We are the Data & AI team at Noventiq Egypt — a group of data scientists and AI engineers passionate about building intelligent, data-driven solutions. We specialize in machine learning, deep learning, LLMs, multi-agent systems, and enterprise data engineering.\n\nOur mission is to help businesses unlock the full potential of their data through cutting-edge AI technologies and actionable insights.",
-    "email": "data-ai@noventiq.com",
+    "about": "We are the Service Delivery Team at Noventiq Egypt — a group of data scientists and AI engineers passionate about building intelligent, data-driven solutions. We specialize in machine learning, deep learning, LLMs, multi-agent systems, and enterprise data engineering.\n\nOur mission is to help businesses unlock the full potential of their data through cutting-edge AI technologies and actionable insights.",
+    "email": "service.delivery@noventiq.com",
     "location": "Cairo, Egypt",
-    "linkedin": "https://www.linkedin.com/company/noventiq",
+    "linkedin": "https://www.linkedin.com/company/noventiqegypt24/",
     "github": "https://github.com/noventiq-egypt"
   },
   "industries": [

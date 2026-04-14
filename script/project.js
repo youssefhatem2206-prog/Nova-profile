@@ -16,7 +16,7 @@ function show(id) { document.getElementById(id)?.classList.remove('d-none'); }
 function hide(id) { document.getElementById(id)?.classList.add('d-none'); }
 
 function renderProject(p) {
-    document.title = `${p.title} – Noventiq Data & AI`;
+    document.title = `${p.title} – Noventiq Egypt`;
 
     // Hero: video or image
     const vc = document.getElementById('video-container');
