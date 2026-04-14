@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import {
     collection, getDocs, addDoc, updateDoc, deleteDoc,
-    doc, getDoc, setDoc, query, orderBy, serverTimestamp
+    doc, getDoc, setDoc, query, orderBy, serverTimestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 import {
     ref as storageRef, uploadBytesResumable, getDownloadURL
@@ -38,7 +38,8 @@ document.querySelectorAll('.sidebar-nav .nav-item[data-tab]').forEach(link => {
         link.classList.add('active');
         document.querySelectorAll('.tab-content-panel').forEach(p => p.classList.add('d-none'));
         document.getElementById(`tab-${tab}`).classList.remove('d-none');
-        const titles = { projects: 'Projects', skills: 'Skills', services: 'Services', about: 'About Team' };
+        const titles = { projects: 'Projects', skills: 'Skills', services: 'Services', about: 'About Team', messages: 'Messages' };
+        if (tab === 'messages') loadMessages();
         document.getElementById('topbar-title').textContent = titles[tab] || tab;
     });
 });
@@ -135,7 +136,7 @@ function renderProjectRow(p) {
     const deployLabels = { cloud: 'Cloud', onprem: 'On-Prem', hybrid: 'Hybrid' };
     tr.innerHTML = `
         <td>${p.image ? `<img src="${p.image}" alt="" class="table-thumb" onerror="this.style.display='none'">` : '<i class="fas fa-image text-muted"></i>'}</td>
-        <td><strong>${p.title}</strong><br><small class="text-muted">${p.industry || ''}</small></td>
+        <td><strong>${p.title}</strong><br><small class="text-muted">${p.industry || ''}${p.team ? ` · ${p.team}` : ''}</small></td>
         <td>${p.category || '–'}</td>
         <td>
             <small class="text-muted">${(p.tags || []).join(', ') || '–'}</small><br>
@@ -174,6 +175,7 @@ function openProjectForm(p) {
     document.getElementById('p-long-description').value   = p?.longDescription || '';
     document.getElementById('p-tags').value               = (p?.tags || []).join(', ');
     document.getElementById('p-deploy').value             = p?.deploymentType || '';
+    document.getElementById('p-team').value               = p?.team || '';
     document.getElementById('p-url').value                = p?.projectUrl || '';
     document.getElementById('p-image-url').value          = p?.image || '';
     document.getElementById('p-video-url').value          = p?.videoUrl || '';
@@ -242,6 +244,7 @@ document.getElementById('project-form').addEventListener('submit', async e => {
             longDescription: document.getElementById('p-long-description').value.trim(),
             tags:            parseTags(document.getElementById('p-tags').value),
             industry:        document.getElementById('p-industry').value,
+            team:            document.getElementById('p-team').value,
             deploymentType:  document.getElementById('p-deploy').value,
             projectUrl:      document.getElementById('p-url').value.trim(),
             image:           imageUrl,
@@ -650,6 +653,83 @@ document.getElementById('btn-save-industries').addEventListener('click', async (
     }
 });
 
+// ══════════════════════════════════════════════════════════
+// MESSAGES
+// ══════════════════════════════════════════════════════════
+async function loadMessages() {
+    const listEl = document.getElementById('messages-list');
+    hide('messages-list'); hide('messages-empty'); show('messages-loading');
+    try {
+        const snap = await getDocs(query(collection(db, 'contacts'), orderBy('sentAt', 'desc')));
+        hide('messages-loading');
+        if (snap.empty) { show('messages-empty'); return; }
+
+        const messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const unread   = messages.filter(m => !m.read).length;
+
+        // update sidebar badge
+        const badge = document.getElementById('unread-badge');
+        if (badge) {
+            if (unread > 0) { badge.textContent = unread; badge.classList.remove('d-none'); }
+            else badge.classList.add('d-none');
+        }
+
+        listEl.innerHTML = messages.map(m => {
+            const date = m.sentAt?.toDate
+                ? m.sentAt.toDate().toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
+                : '—';
+            return `
+            <div class="message-card ${m.read ? '' : 'unread'}" id="msg-${m.id}">
+                <div class="message-header">
+                    <div class="message-sender">
+                        <i class="fas fa-user-circle me-2"></i>
+                        <strong>${m.name}</strong>
+                        <a href="mailto:${m.email}" class="ms-2 text-muted small">${m.email}</a>
+                        ${!m.read ? '<span class="badge bg-danger ms-2">New</span>' : ''}
+                    </div>
+                    <div class="message-actions">
+                        <span class="text-muted small me-3">${date}</span>
+                        ${!m.read ? `<button type="button" class="btn btn-sm btn-outline-success me-1" onclick="markRead('${m.id}')"><i class="fas fa-check"></i></button>` : ''}
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteMessage('${m.id}')"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="message-subject"><i class="fas fa-tag me-1 text-muted"></i>${m.subject}</div>
+                <div class="message-body">${m.message}</div>
+            </div>`;
+        }).join('');
+
+        show('messages-list');
+    } catch (err) {
+        hide('messages-loading');
+        show('messages-empty');
+        console.error('loadMessages:', err);
+    }
+}
+
+window.markRead = async function(id) {
+    await updateDoc(doc(db, 'contacts', id), { read: true });
+    loadMessages();
+};
+
+window.deleteMessage = function(id) {
+    confirmDelete('Delete this message?', async () => {
+        await deleteDoc(doc(db, 'contacts', id));
+        document.getElementById(`msg-${id}`)?.remove();
+        if (!document.querySelectorAll('.message-card').length) {
+            hide('messages-list'); show('messages-empty');
+        }
+        loadMessages();
+    });
+};
+
+document.getElementById('btn-mark-all-read').addEventListener('click', async () => {
+    const snap  = await getDocs(query(collection(db, 'contacts')));
+    const batch = writeBatch(db);
+    snap.docs.forEach(d => { if (!d.data().read) batch.update(d.ref, { read: true }); });
+    await batch.commit();
+    loadMessages();
+});
+
 // ── Init ──────────────────────────────────────────────────
 async function init() {
     await Promise.all([
@@ -659,4 +739,11 @@ async function init() {
         loadAboutForm(),
         loadIndustries()
     ]);
+    // show unread badge on sidebar without loading full messages
+    try {
+        const snap   = await getDocs(collection(db, 'contacts'));
+        const unread = snap.docs.filter(d => !d.data().read).length;
+        const badge  = document.getElementById('unread-badge');
+        if (badge && unread > 0) { badge.textContent = unread; badge.classList.remove('d-none'); }
+    } catch (_) {}
 }

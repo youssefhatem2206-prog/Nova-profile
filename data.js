@@ -1,7 +1,7 @@
 // data.js — reads all data from Firebase Firestore (ES module)
 import { db } from './firebase-config.js';
 import {
-    collection, getDocs, doc, getDoc, query, orderBy
+    collection, getDocs, doc, getDoc, addDoc, query, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 // ── Deploy badge helper ───────────────────────────────────
@@ -49,24 +49,25 @@ function projectCard(p) {
     const extLink        = p.projectUrl
         ? `<a href="${p.projectUrl}" target="_blank" class="portfolio-link" title="Live Demo"><i class="fas fa-external-link-alt"></i></a>` : '';
     const industryBadge  = p.industry ? `<span class="badge-industry">${p.industry}</span>` : '';
+    const teamBadgeHtml  = p.team ? `<span class="badge-team">${p.team}</span>` : '';
     const deployBadgeHtml = deployBadge(p.deploymentType);
 
     return `
         <div class="col-lg-4 col-md-6 mb-4 portfolio-item"
              data-industry="${p.industry || ''}"
              data-deploy="${p.deploymentType || ''}"
-             data-aos="fade-up">
+             data-team="${p.team || ''}">
             <div class="portfolio-card">
                 <div class="portfolio-img">
-                    <img src="${p.image || 'images/placeholder.png'}" alt="${p.title}" loading="lazy">
+                    <img src="${p.image || 'images/placeholder.png'}" alt="${p.title}">
                     <div class="portfolio-overlay">
                         <div class="portfolio-links">${extLink}</div>
                     </div>
                 </div>
                 <div class="portfolio-content">
-                    <div class="project-meta-badges">${industryBadge}${deployBadgeHtml}</div>
-                    ${tags ? `<div class="project-tags">${tags}</div>` : ''}
                     <h4>${p.title}</h4>
+                    <div class="project-meta-badges">${teamBadgeHtml}${industryBadge}${deployBadgeHtml}</div>
+                    ${tags ? `<div class="project-tags">${tags}</div>` : ''}
                     <p>${p.description}</p>
                     <a href="project.html?id=${p.id}" class="btn-portfolio">
                         <i class="fas fa-play-circle me-1"></i> View Project
@@ -80,17 +81,62 @@ function buildFilters(projects, industries) {
     const filtersEl = document.getElementById('portfolio-filters');
     if (!filtersEl) return;
 
+    const INDUSTRY_ICONS = {
+        'Banking, Financial Services & Insurance (BFSI)': 'fa-university',
+        'Healthcare & Life Sciences':                     'fa-heartbeat',
+        'Retail & E-Commerce':                            'fa-shopping-cart',
+        'Manufacturing & Industrial (Industry 4.0)':      'fa-industry',
+        'Telecom & Media':                                'fa-satellite-dish',
+        'Government & Public Sector':                     'fa-landmark',
+        'Education & EdTech':                             'fa-graduation-cap',
+        'Energy, Utilities & Oil & Gas':                  'fa-bolt',
+        'IT & ITeS / Technology Providers':               'fa-microchip',
+        'Logistics & Transportation':                     'fa-truck',
+        'Agriculture & AgriTech':                         'fa-seedling',
+        'Pharmaceuticals and Hospitality':                'fa-pills'
+    };
+
+    const TEAM_ORDER = ['Data and AI', 'Infrastructure', 'Cyber Security', 'MWP', 'Cloud and Devops'];
+    const TEAM_ICONS = {
+        'Data and AI':      'fa-brain',
+        'Infrastructure':   'fa-network-wired',
+        'Cyber Security':   'fa-shield-alt',
+        'MWP':              'fa-laptop-code',
+        'Cloud and Devops': 'fa-cloud'
+    };
+
+    const filteredTeams  = TEAM_ORDER;
     const usedIndustries = new Set(projects.map(p => p.industry).filter(Boolean));
     const filteredIndustries = (industries || []).filter(ind => usedIndustries.has(ind));
     const deploys = [...new Set(projects.map(p => p.deploymentType).filter(Boolean))];
 
-    if (!filteredIndustries.length && !deploys.length) return;
+    if (!filteredTeams.length && !filteredIndustries.length && !deploys.length) return;
 
     const DEPLOY_ICONS = { cloud: 'fa-cloud', onprem: 'fa-server', hybrid: 'fa-network-wired' };
 
     // ── Build bar HTML ────────────────────────────────────
     let html = `<div class="filter-bar">
         <button type="button" class="filter-pill active" data-filter="all">All</button>`;
+
+    if (filteredTeams.length) {
+        html += `
+        <div class="filter-dropdown-wrap">
+            <button type="button" class="filter-pill" data-dropdown="team">
+                <i class="fas fa-users item-icon"></i> Team
+                <i class="fas fa-chevron-down filter-chevron"></i>
+            </button>
+            <div class="filter-dropdown-menu" id="dd-team">
+                <button type="button" class="filter-dropdown-item active" data-filter="all-team">
+                    <i class="fas fa-th item-icon"></i> All Teams
+                </button>`;
+        filteredTeams.forEach(team => {
+            const icon = TEAM_ICONS[team] || 'fa-users';
+            html += `<button type="button" class="filter-dropdown-item" data-filter="team:${team}">
+                <i class="fas ${icon} item-icon"></i>${team}
+            </button>`;
+        });
+        html += `</div></div>`;
+    }
 
     if (filteredIndustries.length) {
         html += `
@@ -104,8 +150,9 @@ function buildFilters(projects, industries) {
                     <i class="fas fa-th item-icon"></i> All Industries
                 </button>`;
         filteredIndustries.forEach(ind => {
+            const icon = INDUSTRY_ICONS[ind] || 'fa-building';
             html += `<button type="button" class="filter-dropdown-item" data-filter="industry:${ind}">
-                <i class="fas fa-building item-icon"></i>${ind}
+                <i class="fas ${icon} item-icon"></i>${ind}
             </button>`;
         });
         html += `</div></div>`;
@@ -137,14 +184,16 @@ function buildFilters(projects, industries) {
     filtersEl.classList.remove('d-none');
 
     // ── Filter logic ──────────────────────────────────────
+    let activeTeam     = 'all';
     let activeIndustry = 'all';
     let activeDeploy   = 'all';
 
     function applyFilters() {
         document.querySelectorAll('.portfolio-item').forEach(item => {
+            const matchTeam     = activeTeam     === 'all' || item.dataset.team     === activeTeam;
             const matchIndustry = activeIndustry === 'all' || item.dataset.industry === activeIndustry;
-            const matchDeploy   = activeDeploy   === 'all' || item.dataset.deploy    === activeDeploy;
-            item.classList.toggle('d-none', !(matchIndustry && matchDeploy));
+            const matchDeploy   = activeDeploy   === 'all' || item.dataset.deploy   === activeDeploy;
+            item.classList.toggle('d-none', !(matchTeam && matchIndustry && matchDeploy));
         });
     }
 
@@ -168,14 +217,11 @@ function buildFilters(projects, industries) {
 
     // "All" pill
     filtersEl.querySelector('[data-filter="all"]').addEventListener('click', () => {
-        activeIndustry = 'all';
-        activeDeploy   = 'all';
-        // Reset pill states
+        activeTeam = 'all'; activeIndustry = 'all'; activeDeploy = 'all';
         filtersEl.querySelectorAll('[data-dropdown]').forEach(t => t.classList.remove('active', 'has-selection'));
         filtersEl.querySelector('[data-filter="all"]').classList.add('active');
-        // Reset dropdown item states
         filtersEl.querySelectorAll('.filter-dropdown-item').forEach(i => {
-            i.classList.toggle('active', i.dataset.filter === 'all-industry' || i.dataset.filter === 'all-deploy');
+            i.classList.toggle('active', ['all-team','all-industry','all-deploy'].includes(i.dataset.filter));
         });
         applyFilters();
     });
@@ -186,24 +232,21 @@ function buildFilters(projects, industries) {
             e.stopPropagation();
             const filter = item.dataset.filter;
             const menu   = item.closest('.filter-dropdown-menu');
-            const type   = menu.id === 'dd-industry' ? 'industry' : 'deploy';
+            const type   = menu.id === 'dd-team' ? 'team' : menu.id === 'dd-industry' ? 'industry' : 'deploy';
 
-            // Update active item within this dropdown
             menu.querySelectorAll('.filter-dropdown-item').forEach(i => i.classList.remove('active'));
             item.classList.add('active');
 
-            // Update state
-            if (type === 'industry') activeIndustry = filter.startsWith('industry:') ? filter.split(':')[1] : 'all';
-            else                     activeDeploy   = filter.startsWith('deploy:')   ? filter.split(':')[1] : 'all';
+            if      (type === 'team')     activeTeam     = filter.startsWith('team:')     ? filter.split(':').slice(1).join(':') : 'all';
+            else if (type === 'industry') activeIndustry = filter.startsWith('industry:') ? filter.split(':').slice(1).join(':') : 'all';
+            else                          activeDeploy   = filter.startsWith('deploy:')   ? filter.split(':')[1] : 'all';
 
-            // Update trigger pill
             const trigger = filtersEl.querySelector(`[data-dropdown="${type}"]`);
-            const hasSelection = (type === 'industry' ? activeIndustry : activeDeploy) !== 'all';
-            trigger.classList.toggle('has-selection', hasSelection);
+            const val     = type === 'team' ? activeTeam : type === 'industry' ? activeIndustry : activeDeploy;
+            trigger.classList.toggle('has-selection', val !== 'all');
             trigger.classList.remove('active');
 
-            // Remove "All" pill active if any filter is set
-            const anyActive = activeIndustry !== 'all' || activeDeploy !== 'all';
+            const anyActive = activeTeam !== 'all' || activeIndustry !== 'all' || activeDeploy !== 'all';
             filtersEl.querySelector('[data-filter="all"]').classList.toggle('active', !anyActive);
 
             closeAllDropdowns();
@@ -234,7 +277,6 @@ async function loadProjects() {
 
     grid.innerHTML = projects.map(p => projectCard(p)).join('');
     buildFilters(projects, industries);
-    if (window.AOS) AOS.refresh();
 }
 
 // ── Skills ────────────────────────────────────────────────
@@ -313,6 +355,38 @@ async function loadServices() {
 
     if (window.AOS) AOS.refresh();
 }
+
+// ── Contact Form ──────────────────────────────────────────
+window.sendContactMessage = async function () {
+    const name    = document.getElementById('name').value.trim();
+    const email   = document.getElementById('email').value.trim();
+    const subject = document.getElementById('subject').value.trim();
+    const comment = document.getElementById('comment').value.trim();
+    const btn     = document.querySelector('#contactForm button[type="button"]');
+    const origTxt = btn ? btn.innerHTML : '';
+
+    if (!name || !email || !subject || !comment) {
+        alert('Please fill in all fields');
+        return;
+    }
+
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending…'; }
+
+    try {
+        await addDoc(collection(db, 'contacts'), {
+            name, email, subject, message: comment,
+            read: false,
+            sentAt: serverTimestamp()
+        });
+        document.getElementById('contactForm').reset();
+        alert('✅ Your message has been sent successfully!');
+    } catch (err) {
+        console.error(err);
+        alert('❌ Failed to send your message. Please try again.');
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = origTxt; }
+    }
+};
 
 // ── Init ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
