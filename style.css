@@ -245,22 +245,12 @@ img { max-width:100%; height:auto; }
 .portfolio-content h4 { font-size:1rem; color:var(--primary-color); margin-bottom:8px; }
 .portfolio-content p  { font-size:.875rem; color:var(--gray); flex:1; line-height:1.65; }
 .project-meta-badges { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
-.badge-team {
+.meta-badge {
     font-size:.72rem; font-weight:600; padding:3px 10px; border-radius:20px;
-    background: rgba(33,146,191,.15); color: #2192BF;
-    border: 1px solid rgba(33,146,191,.35);
+    background: rgba(33,142,199,.12); color: #218EC7;
+    border: 1px solid rgba(33,142,199,.3);
+    display:inline-flex; align-items:center;
 }
-.badge-industry {
-    font-size:.72rem; font-weight:500; padding:3px 10px; border-radius:20px;
-    background: rgba(13,81,140,.1); color: var(--primary-color);
-    border: 1px solid rgba(13,81,140,.2);
-}
-.badge-deploy {
-    font-size:.72rem; font-weight:500; padding:3px 10px; border-radius:20px;
-}
-.badge-deploy.cloud,
-.badge-deploy.onprem,
-.badge-deploy.hybrid    { background:rgba(33,142,199,.12); color:#218EC7; border:1px solid rgba(33,142,199,.3); }
 .btn-portfolio { display:inline-flex; align-items:center; gap:6px; margin-top:14px; color:var(--accent-color); font-size:.875rem; font-weight:600; border:2px solid var(--accent-color); padding:7px 18px; border-radius:25px; transition:var(--transition); align-self:flex-start; }
 .btn-portfolio:hover { background:var(--accent-color); color:#fff; transform:translateX(4px); }
 

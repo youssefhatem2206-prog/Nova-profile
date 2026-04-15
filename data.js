@@ -7,12 +7,21 @@ import {
 // ── Deploy badge helper ───────────────────────────────────
 const DEPLOY_LABELS = { cloud: 'Cloud', onprem: 'On-Premises', hybrid: 'Hybrid' };
 
-function deployBadge(type) {
-    if (!type) return '';
-    const label = DEPLOY_LABELS[type] || type;
-    const icon  = type === 'cloud' ? 'fa-cloud' : type === 'onprem' ? 'fa-server' : 'fa-network-wired';
-    return `<span class="badge-deploy ${type}"><i class="fas ${icon} me-1"></i>${label}</span>`;
-}
+// ── Industry icons ────────────────────────────────────────
+const INDUSTRY_ICONS = {
+    'Banking, Financial Services & Insurance (BFSI)': 'fa-university',
+    'Healthcare & Life Sciences':                     'fa-heartbeat',
+    'Retail & E-Commerce':                            'fa-shopping-cart',
+    'Manufacturing & Industrial (Industry 4.0)':      'fa-industry',
+    'Telecom & Media':                                'fa-satellite-dish',
+    'Government & Public Sector':                     'fa-landmark',
+    'Education & EdTech':                             'fa-graduation-cap',
+    'Energy, Utilities & Oil & Gas':                  'fa-bolt',
+    'IT & ITeS / Technology Providers':               'fa-microchip',
+    'Logistics & Transportation':                     'fa-truck',
+    'Agriculture & AgriTech':                         'fa-seedling',
+    'Pharmaceuticals and Hospitality':                'fa-pills'
+};
 
 // ── Site Info ─────────────────────────────────────────────
 async function loadSiteInfo() {
@@ -45,12 +54,11 @@ async function loadSiteInfo() {
 
 // ── Projects ──────────────────────────────────────────────
 function projectCard(p) {
-    const tags           = (p.tags || []).map(t => `<span class="project-tag">${t}</span>`).join('');
     const extLink        = p.projectUrl
         ? `<a href="${p.projectUrl}" target="_blank" class="portfolio-link" title="Live Demo"><i class="fas fa-external-link-alt"></i></a>` : '';
-    const industryBadge  = p.industry ? `<span class="badge-industry">${p.industry}</span>` : '';
-    const teamBadgeHtml  = p.team ? `<span class="badge-team">${p.team}</span>` : '';
-    const deployBadgeHtml = deployBadge(p.deploymentType);
+    const industryBadge  = p.industry ? `<span class="meta-badge"><i class="fas ${INDUSTRY_ICONS[p.industry] || 'fa-building'} me-1"></i>${p.industry}</span>` : '';
+    const teamBadgeHtml  = p.team ? `<span class="meta-badge"><i class="fas fa-users me-1"></i>${p.team}</span>` : '';
+    const deployBadgeHtml = p.deploymentType ? `<span class="meta-badge"><i class="fas ${p.deploymentType === 'cloud' ? 'fa-cloud' : p.deploymentType === 'onprem' ? 'fa-server' : 'fa-network-wired'} me-1"></i>${DEPLOY_LABELS[p.deploymentType] || p.deploymentType}</span>` : '';
 
     return `
         <div class="col-lg-4 col-md-6 mb-4 portfolio-item"
@@ -67,7 +75,6 @@ function projectCard(p) {
                 <div class="portfolio-content">
                     <h4>${p.title}</h4>
                     <div class="project-meta-badges">${teamBadgeHtml}${industryBadge}${deployBadgeHtml}</div>
-                    ${tags ? `<div class="project-tags">${tags}</div>` : ''}
                     <p>${p.description}</p>
                     <a href="project.html?id=${p.id}" class="btn-portfolio">
                         <i class="fas fa-play-circle me-1"></i> View Project
