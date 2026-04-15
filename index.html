@@ -25,7 +25,7 @@
     <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
     <script>(function(){ emailjs.init("89xveQzwh27TcapUp"); })();</script>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 
@@ -57,12 +57,11 @@
         <div class="container-fluid">
             <div class="row">
                 <div class="col-12 hero-content text-center">
-                    <div class="hero-badge" data-aos="fade-down">Noventiq Egypt</div>
-                    <h1 class="hero-title" data-aos="fade-up" data-aos-delay="100">
-                        Data &amp; <span class="highlight">AI Team</span>
-                    </h1>
+                    <div class="hero-badge-white" data-aos="fade-down">
+                        <span class="brand-novent">NOVENT</span><span class="brand-iq">IQ</span> <span class="brand-eg">EG</span>
+                    </div>
                     <p class="hero-desc" data-aos="fade-up" data-aos-delay="200" id="hero-tagline">
-                        Transforming Business Through Data & Artificial Intelligence
+                        Powering Your Digital Future
                     </p>
                     <div class="hero-btns" data-aos="fade-up" data-aos-delay="300">
                         <a href="#portfolio" class="btn btn-primary">
@@ -112,16 +111,16 @@
                 </div>
                 <div class="col-lg-7" data-aos="fade-left">
                     <div class="about-content">
-                        <h3 id="about-team-name">Noventiq Team · Noventiq Egypt</h3>
+                        <h3 id="about-team-name"></h3>
                         <div id="about-description" class="about-text"></div>
                         <div class="about-meta mt-4">
                             <div class="meta-row">
                                 <i class="fas fa-map-marker-alt"></i>
-                                <span id="about-location">Cairo, Egypt</span>
+                                <span id="about-location"></span>
                             </div>
                             <div class="meta-row">
                                 <i class="fas fa-envelope"></i>
-                                <span id="about-email">data-ai@noventiq.com</span>
+                                <span id="about-email"></span>
                             </div>
                         </div>
                     </div>
@@ -195,11 +194,11 @@
                         <div class="contact-details">
                             <div class="contact-item">
                                 <i class="fas fa-map-marker-alt"></i>
-                                <div><h5>Location</h5><p id="contact-location">Cairo, Egypt</p></div>
+                                <div><h5>Location</h5><p id="contact-location"></p></div>
                             </div>
                             <div class="contact-item">
                                 <i class="fas fa-envelope"></i>
-                                <div><h5>Email</h5><p id="contact-email">data-ai@noventiq.com</p></div>
+                                <div><h5>Email</h5><p id="contact-email"></p></div>
                             </div>
                             <div class="contact-item">
                                 <i class="fab fa-linkedin"></i>
@@ -227,7 +226,9 @@
                             <div class="form-group">
                                 <textarea class="form-control" rows="5" id="comment" placeholder="Project Details" required></textarea>
                             </div>
-                            <button type="button" class="btn btn-primary btn-block" onclick="sendEmail()">Send Message</button>
+                            <button type="button" class="btn btn-primary btn-block" onclick="window.sendContactMessage()">
+                                <i class="fas fa-paper-plane me-2"></i>Send Message
+                            </button>
                         </form>
                     </div>
                 </div>
